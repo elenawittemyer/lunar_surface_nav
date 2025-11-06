@@ -136,7 +136,7 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_horizon):
+def animate_plot(path_travelled, num_agents, time_horizon, craters):
     cmap = get_colormap(num_agents+1)
     pos_x = []
     pos_y = []
@@ -147,8 +147,6 @@ def animate_plot(path_travelled, num_agents, time_horizon):
     fig, ax = plt.subplots()
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
     
-    
-    craters = np.array([[150, 30], [180, 200], [30, 120]])
     for crater in craters:
         circle = patches.Circle([crater[0], crater[1]], radius=10)
         ax.add_patch(circle)
@@ -177,7 +175,7 @@ shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, bounds=np.array(
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
 
-crater_pos = np.array([[150, 30], [180, 200], [30, 120]])
+crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
 
 pmap = np.ones((size, size))
 pmap = pmap/(size*size)
@@ -185,9 +183,9 @@ for i in range(0, len(crater_pos)):
     pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 
-main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack)
+main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack, craters = crater_pos)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, 100)
+animate_plot(path_travelled, 3, 100, crater_pos)
 
 
 '''
