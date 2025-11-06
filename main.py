@@ -89,20 +89,22 @@ def gaussian(size, x0, y0, radius):
     return gaussian
 
 
-def get_shadow_stack(path, time_horizon=100, start_time=0, end_time=20000, dt=200):
-    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, end_time, dt)
+def get_shadow_stack(path, bounds, time_horizon=100, start_time=0, end_time=20000, dt=200):
+    shadow_map_stack = get_shadow_map_stack(path, 'Site01', bounds, start_time, end_time, dt)
     
     if ((end_time-start_time)//dt)!=time_horizon:
         raise Exception('Time horizon and number of time steps do not match.')
     
     shadows_idx_stack = []
     for i in range(len(shadow_map_stack)):
+        scale = 10
         shadow_map = shadow_map_stack[i]
-        resized_x = shadow_map.shape[1] // 10
-        resized_y = shadow_map.shape[0] // 10
+        #bounds_frac = [(bounds[0,1]-bounds[0,0])/shadow_map.shape[1], (bounds[1,1]-bounds[1,0])/shadow_map.shape[0]]
+        resized_x = shadow_map.shape[1] // scale
+        resized_y = shadow_map.shape[0] // scale
         resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
         shadow_idx = np.where(resized_shadow_map<40)
-        shadow_idx_array = 10*np.array([shadow_idx[1], shadow_idx[0]]).T
+        shadow_idx_array = scale*np.array([shadow_idx[1], shadow_idx[0]]).T
         shadow_idx_array = convert_pos(shadow_idx_array, np.shape(shadow_map)[0])
         shadows_idx_stack.append(shadow_idx_array)
 
@@ -146,7 +148,7 @@ def animate_plot(path_travelled, num_agents, time_horizon):
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
     
     
-    craters = np.array([[50, 30], [180, 200], [100, 120]])
+    craters = np.array([[150, 30], [180, 200], [30, 120]])
     for crater in craters:
         circle = patches.Circle([crater[0], crater[1]], radius=10)
         ax.add_patch(circle)
@@ -171,16 +173,16 @@ def animate_plot(path_travelled, num_agents, time_horizon):
 #######################################################
 
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
-shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path)
+shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, bounds=np.array([[0, 1000], [0, 1000]]))
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
 
-crater_pos = np.array([[50, 30], [180, 200], [100, 120]])
+crater_pos = np.array([[150, 30], [180, 200], [30, 120]])
 
 pmap = np.ones((size, size))
 pmap = pmap/(size*size)
 for i in range(0, len(crater_pos)):
-    pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 5)
+    pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 
 main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = pmap, shadows = shadow_idx_stack)

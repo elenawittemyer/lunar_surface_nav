@@ -35,27 +35,38 @@ def get_shadow_map(dem_path, scaling = 10, plotting = False):
 
         return resized_shadow_map
 
-def get_shadow_map_stack(dem_path, site_name, start_time=0, end_time=60, dt=5, scaling=10, plotting=False):
+def get_shadow_map_stack(dem_path, site_name, bounds, start_time=0, end_time=60, dt=5, scaling=10, plotting=False):
     with rasterio.open(dem_path) as src:
         dem = src.read(1)
         shadow_map_stack = []
         for i in range((end_time-start_time)//dt):
+            '''
+            azimuth = (start_time+i*dt) / lunar_day_min * 360
+            hillshade = es.hillshade(dem, azimuth, altitude=5)
+            
+            shadow_idx = np.where(hillshade>210)
+            shadow_map = 100*np.ones(np.shape(hillshade))
+            shadow_map[shadow_idx] = 0
+            '''
+            
             sm_save_file = 'shadow_maps/' + site_name + '/shadows_' + str(start_time+i*dt) +'.npy'
             if os.path.isfile(sm_save_file) == False:
                 azimuth = (start_time+i*dt) / lunar_day_min * 360
                 hillshade = es.hillshade(dem, azimuth, altitude=5)
-
+                
                 shadow_idx = np.where(hillshade>210)
                 shadow_map = 100*np.ones(np.shape(hillshade))
                 shadow_map[shadow_idx] = 0
+                
                 resized_x = shadow_map.shape[1] // scaling
                 resized_y = shadow_map.shape[0] // scaling
                 resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
                 np.save(sm_save_file, resized_shadow_map)
-
+                
             else:
                 resized_shadow_map = np.load(sm_save_file)
             
+            #resized_shadow_map = shadow_map[bounds[0, 0]:bounds[0, 1], bounds[1, 0]:bounds[1, 1]]
             shadow_map_stack.append(resized_shadow_map)
 
             
