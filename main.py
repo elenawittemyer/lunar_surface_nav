@@ -145,12 +145,12 @@ def animate_plot(path_travelled, num_agents, time_horizon):
     fig, ax = plt.subplots()
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
     
-    '''
+    
     craters = np.array([[50, 30], [180, 200], [100, 120]])
     for crater in craters:
         circle = patches.Circle([crater[0], crater[1]], radius=10)
         ax.add_patch(circle)
-    '''
+    
 
     for i in range(num_agents):
         line = [[pos_x[i][0], pos_x[i][1]], [pos_y[i][0], pos_y[i][1]]]
@@ -177,8 +177,9 @@ size = np.shape(shadow_map)[0]
 
 crater_pos = np.array([[50, 30], [180, 200], [100, 120]])
 
-pmap = gaussian(size, crater_pos[0][0], crater_pos[0][1], 10)
-for i in range(1, len(crater_pos)):
+pmap = np.ones((size, size))
+pmap = pmap/(size*size)
+for i in range(0, len(crater_pos)):
     pmap += gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 

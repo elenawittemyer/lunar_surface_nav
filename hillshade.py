@@ -71,6 +71,7 @@ def get_shadow_map_stack(dem_path, site_name, start_time=0, end_time=60, dt=5, s
 
         return shadow_map_stack
 
+'''
 path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 with rasterio.open(path) as src:
     dem = src.read(1)
@@ -91,6 +92,7 @@ with rasterio.open(path) as src:
     surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, facecolors=rgb,
                         linewidth=0, antialiased=False, shade=False)
     plt.show()
+'''
     
 
 #get_shadow_map_stack(path, 'Site01', start_time=0, dt=200, end_time=20000, plotting=True)
