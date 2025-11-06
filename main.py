@@ -185,7 +185,7 @@ for i in range(0, len(crater_pos)):
     pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 
-main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = pmap, shadows = shadow_idx_stack)
+main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, 100)
 
