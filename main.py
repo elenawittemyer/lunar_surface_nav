@@ -76,18 +76,6 @@ def obstacle_pos(size):
     obstacle_coords = convert_pos(obstacle_coords, size)
     return obstacle_coords
 
-def gaussian(size, x0, y0, radius):
-
-    # Initialize x and y
-    x = np.arange(0, size, 1, float)
-    y = x[:,np.newaxis]
-
-    # Initialize the gaussian filter
-    gaussian = np.zeros((size, size))
-
-    gaussian += np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / radius**2)
-    return gaussian
-
 
 def get_shadow_stack(path, time_args, bounds):
     
@@ -195,6 +183,8 @@ pmap = pmap/(size*size)
 for i in range(0, len(crater_pos)):
     pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
+
+
 
 main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack, craters = crater_pos)
 path_travelled = np.load('path_data.npy')

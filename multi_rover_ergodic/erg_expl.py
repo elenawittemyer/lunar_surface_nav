@@ -82,7 +82,7 @@ class ErgodicTrajectoryOpt(object):
             e = np.squeeze(emap(x))
             ck = np.mean(vmap(get_ck, in_axes=(1, None))(e, self.basis), axis=0)
             erg_m = self.erg_metric(ck, phik)
-            return 1000 * erg_m \
+            return 10000 * erg_m \
                     + np.mean(u**2) \
                     + np.sum(barrier_cost(e)) \
                     #+ landmark_dist_penalty(x)
@@ -101,7 +101,7 @@ class ErgodicTrajectoryOpt(object):
         def ineq_constr(z,args):
             """ control inequality constraints"""
             x, u = z[:, :, :n], z[:, :, n:]
-            control_constraint =  abs(u)-5
+            control_constraint =  abs(u)-1.
             
             def dist_to_shadow(obstacle, x_t):
                 dist = np.linalg.norm(x_t - obstacle, axis=1).flatten()
@@ -123,12 +123,14 @@ class ErgodicTrajectoryOpt(object):
 
             shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(time_horizon))
             def step_diff(x):
-                diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1) - 10
+                diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1)
                 return diff
             x_arg = np.transpose(x, (1, 0, 2))
             step_constr = vmap(step_diff)(x_arg)
+            upper_step_constr = step_constr - 10
+            #lower_step_constr = 1 - step_constr
             
-            _g = np.concatenate((.1*shadow_constraint.flatten(), control_constraint.flatten(), step_constr.flatten()))
+            _g = np.concatenate((.1*shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
             
             return _g
         
