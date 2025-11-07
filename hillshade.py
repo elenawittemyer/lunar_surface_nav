@@ -104,6 +104,3 @@ with rasterio.open(path) as src:
                         linewidth=0, antialiased=False, shade=False)
     plt.show()
 '''
-    
-
-#get_shadow_map_stack(path, 'Site01', start_time=0, dt=200, end_time=20000, plotting=True)

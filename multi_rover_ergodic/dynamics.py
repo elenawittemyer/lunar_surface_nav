@@ -1,8 +1,15 @@
 import jax.numpy as np
 
 class SingleIntegrator(object):
-    def __init__(self, N) -> None:        # N = the number of drones
-        self.dt = 1   # timestep
+    def __init__(self, N, time_step) -> None:        # N = the number of drones
+        
+        def speed(dt, scaling=10):
+            m_pix = 5 * scaling
+            top_speed = 2.69  #m/s, equal to 6 mph
+            pix_s = (top_speed/m_pix)*dt
+            return pix_s
+        
+        self.dt = speed(time_step)   # timestep
         self.n = 2      # dimensionality of the states (x, y, z) would be 3
         self.m = 2      # dimensionality of the controls (vx, vy, vz) would be 3
         self.N = N

@@ -21,11 +21,12 @@ def convert_pos(pos_array, size):
     return np.round(pos_array-size/2)
 """Luke waz here"""
 class ErgodicTrajectoryOpt(object):
-    def __init__(self, initpos, pmap, num_agents, size, shadows, craters) -> None:
-        time_horizon=100
+    def __init__(self, initpos, pmap, num_agents, size, shadows, craters, time_args) -> None:
+        time_horizon = time_args['time_horizon']
+        time_step = time_args['dt']
         self.basis           = BasisFunc(n_basis=[5,5])
         self.erg_metric      = ErgodicMetric(self.basis)
-        self.robot_model     = SingleIntegrator(num_agents)
+        self.robot_model     = SingleIntegrator(num_agents, time_step)
         n,m,N = self.robot_model.n, self.robot_model.m, self.robot_model.N
         self.target_distr    = TargetDistribution(pmap, size)
         opt_args = {
@@ -121,7 +122,13 @@ class ErgodicTrajectoryOpt(object):
                 return a_i[i, :, :]
 
             shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(time_horizon))
-            _g = np.append(.1*shadow_constraint.flatten(), control_constraint)
+            def step_diff(x):
+                diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1) - 10
+                return diff
+            x_arg = np.transpose(x, (1, 0, 2))
+            step_constr = vmap(step_diff)(x_arg)
+            
+            _g = np.concatenate((.1*shadow_constraint.flatten(), control_constraint.flatten(), step_constr.flatten()))
             
             return _g
         

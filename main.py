@@ -10,7 +10,7 @@ import matplotlib.patches as patches
 from hillshade import get_shadow_map, get_shadow_map_stack
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 
-def main(num_agents, map_size, info_map=None, init_pos=None, plot=True, shadows = None, craters = None):
+def main(num_agents, map_size, time_args, info_map=None, init_pos=None, plot=True, shadows = None, craters = None):
     if info_map is None:
         info_map = sample_map(map_size)
     if init_pos is None:
@@ -18,7 +18,7 @@ def main(num_agents, map_size, info_map=None, init_pos=None, plot=True, shadows 
         
     path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
 
-    traj_opt = ErgodicTrajectoryOpt(init_pos, info_map, num_agents, map_size, shadows, craters)
+    traj_opt = ErgodicTrajectoryOpt(init_pos, info_map, num_agents, map_size, shadows, craters, time_args)
     for k in range(100):
         traj_opt.solver.solve(max_iter=1000)
         sol = traj_opt.solver.get_solution()
@@ -89,7 +89,13 @@ def gaussian(size, x0, y0, radius):
     return gaussian
 
 
-def get_shadow_stack(path, bounds, time_horizon=100, start_time=0, end_time=20000, dt=200):
+def get_shadow_stack(path, time_args, bounds):
+    
+    time_horizon = time_args['time_horizon']
+    start_time = time_args['start_time']
+    end_time = time_args['end_time']
+    dt = time_args['dt']
+
     shadow_map_stack = get_shadow_map_stack(path, 'Site01', bounds, start_time, end_time, dt)
     
     if ((end_time-start_time)//dt)!=time_horizon:
@@ -171,7 +177,14 @@ def animate_plot(path_travelled, num_agents, time_horizon, craters):
 #######################################################
 
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
-shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, bounds=np.array([[0, 1000], [0, 1000]]))
+time_args = {
+    'dt': 200,
+    'start_time': 0,
+    'end_time': 20000,
+    'time_horizon': 100
+}
+
+shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
 
@@ -183,7 +196,7 @@ for i in range(0, len(crater_pos)):
     pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 
-main(num_agents = 3, map_size = size, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack, craters = crater_pos)
+main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack, craters = crater_pos)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, 100, crater_pos)
 
