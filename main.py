@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from hillshade import get_shadow_map, get_shadow_map_stack
 from matplotlib.animation import FuncAnimation, FFMpegWriter
+from info_distrib import random_info
 
 def main(num_agents, map_size, time_args, info_map=None, init_pos=None, plot=True, shadows = None, craters = None):
     if info_map is None:
@@ -130,7 +131,7 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_horizon, craters):
+def animate_plot(path_travelled, num_agents, time_horizon, craters, pmap):
     cmap = get_colormap(num_agents+1)
     pos_x = []
     pos_y = []
@@ -140,6 +141,7 @@ def animate_plot(path_travelled, num_agents, time_horizon, craters):
 
     fig, ax = plt.subplots()
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
+    overlay = ax.imshow(pmap, origin='upper', animated = True)
     
     for crater in craters:
         circle = patches.Circle([crater[0], crater[1]], radius=10)
@@ -153,6 +155,7 @@ def animate_plot(path_travelled, num_agents, time_horizon, craters):
     
     def updatefig(frame, img, traj, ax):
         img.set_array(shadow_map_stack[frame])
+        overlay.set_array(pmap)
         for i in range(num_agents):
             line = [[pos_x[i][frame], pos_x[i][frame+1]], [pos_y[i][frame], pos_y[i][frame+1]]]
             traj, = ax.plot(line[0],line[1], c=cmap(i))
@@ -175,20 +178,15 @@ time_args = {
 shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
-
 crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
-
-pmap = np.ones((size, size))
-pmap = pmap/(size*size)
-for i in range(0, len(crater_pos)):
-    pmap += .01*gaussian(size, crater_pos[i][0], crater_pos[i][1], 10)
 init_pos = convert_pos(np.array([[280, 50], [15, 125], [130, 185]]), np.shape(shadow_map)[0])
 
+pmap = random_info(size)
 
 
-main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = np.ones((size, size)), shadows = shadow_idx_stack, craters = crater_pos)
+main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = pmap, shadows = shadow_idx_stack, craters = crater_pos)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, 100, crater_pos)
+animate_plot(path_travelled, 3, 100, crater_pos, pmap)
 
 
 '''
