@@ -31,7 +31,7 @@ class ErgodicTrajectoryOpt(object):
         self.target_distr    = TargetDistribution(pmap, size)
         opt_args = {
             'x0' : initpos,
-            'xf' : np.array([[-10, 0], [-10, 0], [-10, 0]]),
+            'xf' : np.roll(initpos, 1, axis=0),
             'phik' : get_phik(self.target_distr.evals, self.basis)
         }
         ''' Initialize state '''
