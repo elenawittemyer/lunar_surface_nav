@@ -174,9 +174,9 @@ def animate_plot(path_travelled, num_agents, time_horizon, craters, pmap):
 
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 time_args = {
-    'dt': 200,
+    'dt': 1000,
     'start_time': 0,
-    'end_time': 20000,
+    'end_time': 100000,
     'time_horizon': 100
 }
 

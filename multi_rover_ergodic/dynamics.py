@@ -5,7 +5,7 @@ class SingleIntegrator(object):
         
         def speed(dt, scaling=10):
             m_pix = 5 * scaling
-            top_speed = 2.69  #m/s, equal to 6 mph
+            top_speed = .2  #m/s, equal to 6 mph (change to 1 km/h)
             pix_s = (top_speed/m_pix)*dt
             return pix_s
         
