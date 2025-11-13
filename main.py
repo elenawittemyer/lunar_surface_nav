@@ -130,22 +130,30 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_horizon, craters, pmap):
+def animate_plot(path_travelled, num_agents, time_args, craters, pmap):
+    time_horizon = time_args['time_horizon']
+    total_time = time_args['end_time'] - time_args['start_time']
     extent = [0, 16000, 0, 16000]
+    fps = 10
     size = pmap.shape[0]
     cmap = get_colormap(num_agents+1)
     pos_x = []
     pos_y = []
     for i in range(num_agents):
-        pos_x.append(np.array(path_travelled[i][0]*extent[1]/size).flatten()) 
-        pos_y.append(np.array(path_travelled[i][1]*extent[3]/size).flatten())
+        pos_x.append(np.array(path_travelled[i][0]).flatten()) 
+        pos_y.append(np.array(path_travelled[i][1]).flatten())
 
     fig, ax = plt.subplots()
-    img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True, extent=extent)
+    img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
+    num_ticks = len(ax.get_xticks())
+    tick_labels = np.linspace(0, 16, num_ticks)
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+
     plt.xlabel('km')
     plt.ylabel('km')
-    plt.title('Timescale x2000')
-    overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True, extent=extent)
+    plt.title('Timescale x' + str(total_time/(time_horizon/fps)))
+    overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True)
     
     '''
     for crater in craters:
@@ -167,7 +175,7 @@ def animate_plot(path_travelled, num_agents, time_horizon, craters, pmap):
         return img, traj
 
     ani = FuncAnimation(fig, updatefig, frames=time_horizon, fargs=(img, traj, ax), blit=True)
-    FFwriter = FFMpegWriter(fps=10, codec='libx264', bitrate=1800)
+    FFwriter = FFMpegWriter(fps=fps, codec='libx264', bitrate=1800)
     ani.save('shadow_avoidance.mp4', writer=FFwriter)
 
 #######################################################
@@ -187,10 +195,9 @@ crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
 init_pos = convert_pos(crater_pos, size)
 pmap = random_info(size)
 
-
 main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = pmap, shadows = shadow_idx_stack, craters = crater_pos)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args['time_horizon'], crater_pos, pmap)
+animate_plot(path_travelled, 3, time_args, crater_pos, pmap)
 
 
 '''

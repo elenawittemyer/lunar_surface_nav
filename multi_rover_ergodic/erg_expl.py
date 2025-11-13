@@ -82,7 +82,7 @@ class ErgodicTrajectoryOpt(object):
             e = np.squeeze(emap(x))
             ck = np.mean(vmap(get_ck, in_axes=(1, None))(e, self.basis), axis=0)
             erg_m = self.erg_metric(ck, phik)
-            return 10000 * erg_m \
+            return 1000 * erg_m \
                     + np.mean(u**2) \
                     + np.sum(barrier_cost(e)) \
                     #+ landmark_dist_penalty(x)
@@ -130,7 +130,7 @@ class ErgodicTrajectoryOpt(object):
             upper_step_constr = step_constr - 10
             #lower_step_constr = 1 - step_constr
             
-            _g = np.concatenate((.1*shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
+            _g = np.concatenate((shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
             
             return _g
         

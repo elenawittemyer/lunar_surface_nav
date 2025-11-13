@@ -51,7 +51,7 @@ def get_shadow_map_stack(dem_path, site_name, bounds, start_time=0, end_time=60,
             
             sm_save_file = 'shadow_maps/' + site_name + '/shadows_' + str(start_time+i*dt) +'.npy'
             if os.path.isfile(sm_save_file) == False:
-                azimuth = (start_time+i*dt) / lunar_day_min * 360
+                azimuth = ((start_time+i*dt) / lunar_day_min * 360)%360
                 hillshade = es.hillshade(dem, azimuth, altitude=5)
                 
                 shadow_idx = np.where(hillshade>210)
