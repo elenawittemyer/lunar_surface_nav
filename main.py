@@ -153,8 +153,10 @@ def animate_plot(path_travelled, num_agents, time_args, pmap):
 
     plt.xlabel('km')
     plt.ylabel('km')
-    plt.title('Timescale x' + str(total_time/(time_horizon/fps)))
+    #plt.title('Timescale x' + str(total_time/(time_horizon/fps)))
     overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True)
+    cbar = plt.colorbar(overlay)
+    cbar.ax.set_title('Information Density')
     
     '''
     for crater in craters:
