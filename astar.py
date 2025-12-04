@@ -285,9 +285,9 @@ def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents):
         ax.plot(start[i][0], start[i][1], 'ob')
         ax.plot(goal[i][0], goal[i][1], 'og')
     ax.set_xlim(0,size)
-    ax.set_ylim(0,size)
-    ax.set_yticks(ax.get_xticks())
-    ax.set_yticklabels(ax.get_xticklabels())
+    ax.set_ylim(size,0)
+    ax.set_yticks(ax.get_xticks()[::-1])
+    ax.set_yticklabels(ax.get_xticklabels()[::-1])
 
     def update(frame, final_paths, line, img, num_agents, shadow_len):
         shadow_mask = np.ones((size, size))
@@ -323,8 +323,8 @@ time_args = {
 shadow_map_stack, shadow_idx_stack, original_shadows = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
 #size = np.shape(shadow_map_stack[0])[0]
 size = np.shape(original_shadows[0])[0]
-start_pos = [[50,200], [100, 300], [250, 200]]
-end_pos  = [[300,280], [120, 60], [280, 50]]
+start_pos = [[87,302], [44, 52], [283, 276]]
+end_pos  = [[150,150], [150, 150], [150, 150]]
 num_agents = 3
 
 final_paths = main(size, original_shadows, start_pos, end_pos, num_agents)
