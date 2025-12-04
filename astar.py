@@ -165,7 +165,9 @@ class AStar:
                 if next_t>t_max:
                     next_t = next_t % (t_max+1)
 
-                for neigh in self.map[i].get_neighbors(self.map[i].map[x][y], shadow_stack[next_t]):
+                scaled_time = int(np.floor(next_t/5))
+
+                for neigh in self.map[i].get_neighbors(self.map[i].map[x][y], shadow_stack[scaled_time]):
                     nx, ny = neigh.x, neigh.y
                     if shadow_stack[next_t][ny][nx]<50:
                         continue
@@ -289,7 +291,8 @@ def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents):
 
     def update(frame, final_paths, line, img, num_agents, shadow_len):
         shadow_mask = np.ones((size, size))
-        shadow_mask[np.where(shadow_stack[frame%shadow_len]<50)]=0
+        scaled_time = int(np.floor(frame/5))
+        shadow_mask[np.where(shadow_stack[scaled_time%shadow_len]<50)]=0
         img.set_array(shadow_mask)
         for i in range(num_agents):
             if frame>=len(final_paths[i][0]):
@@ -305,7 +308,7 @@ def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents):
 
     ani = FuncAnimation(fig, update, max_len, fargs=[final_paths, line, img, num_agents, shadow_len],
                                 interval=200, blit=True)
-    FFwriter = FFMpegWriter(fps=10, codec='libx264', bitrate=1800)
+    FFwriter = FFMpegWriter(fps=40, codec='libx264', bitrate=1800)
     ani.save('a*_shadow_avoidance.mp4', writer=FFwriter)
 
 
