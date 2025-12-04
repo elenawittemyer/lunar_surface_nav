@@ -1,6 +1,5 @@
 import numpy as np
 from multi_rover_ergodic.gaussian import gaussian
-from scipy.spatial import Voronoi, voronoi_plot_2d
 import matplotlib.pyplot as plt
 from opensimplex import OpenSimplex
 

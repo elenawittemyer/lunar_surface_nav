@@ -5,7 +5,7 @@ class SingleIntegrator(object):
         
         def speed(dt, scaling=10):
             m_pix = 5 * scaling
-            top_speed = .5  #m/s, (2 km/h)
+            top_speed = .5  #m/s, (2 km/h) real top speed of viper is .2 m/s
             pix_s = (top_speed/m_pix)*dt
             return pix_s
         
