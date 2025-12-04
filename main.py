@@ -11,15 +11,16 @@ from hillshade import get_shadow_map, get_shadow_map_stack
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from info_distrib import random_info
 
-def main(num_agents, map_size, time_args, info_map=None, init_pos=None, plot=True, shadows = None, craters = None):
+def main(num_agents, map_size, time_args, info_map=None, pos=None, plot=True, shadows = None, craters = None):
     if info_map is None:
         info_map = sample_map(map_size)
-    if init_pos is None:
+    if pos is None:
         init_pos = sample_initpos(num_agents, map_size)
+        pos = [init_pos, init_pos]
         
     path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
 
-    traj_opt = ErgodicTrajectoryOpt(init_pos, info_map, num_agents, map_size, shadows, craters, time_args)
+    traj_opt = ErgodicTrajectoryOpt(pos, info_map, num_agents, map_size, shadows, craters, time_args)
     for k in range(100):
         traj_opt.solver.solve(max_iter=1000)
         sol = traj_opt.solver.get_solution()
@@ -130,7 +131,7 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_args, craters, pmap):
+def animate_plot(path_travelled, num_agents, time_args, pmap):
     time_horizon = time_args['time_horizon']
     total_time = time_args['end_time'] - time_args['start_time']
     extent = [0, 16000, 0, 16000]
@@ -191,13 +192,28 @@ time_args = {
 shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
-crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
-init_pos = convert_pos(crater_pos, size)
-pmap = random_info(size)
+#crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
+#init_pos = convert_pos(crater_pos, size)
 
-main(num_agents = 3, map_size = size, time_args = time_args, init_pos = init_pos, info_map = pmap, shadows = shadow_idx_stack, craters = crater_pos)
+start_pos = np.array([[87, 168], [44, 56], [283, 276]])
+end_pos  = np.array([[150,150], [150, 150], [150, 150]])
+init_pos = convert_pos(start_pos, size)
+final_pos = convert_pos(end_pos, size)
+
+'''
+init_pos = np.array([[50,200], [100, 300], [250, 200]])
+final_pos = np.array([[300,280], [120, 60], [280, 50]])
+init_pos = convert_pos(init_pos, size)
+final_pos = convert_pos(final_pos, size)
+'''
+startstop = [init_pos, final_pos]
+
+pmap = random_info(size)
+#pmap = np.ones((size, size))
+
+main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args, crater_pos, pmap)
+animate_plot(path_travelled, 3, time_args, pmap)
 
 
 '''

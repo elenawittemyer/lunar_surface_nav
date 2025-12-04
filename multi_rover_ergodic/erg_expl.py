@@ -21,7 +21,7 @@ def convert_pos(pos_array, size):
     return np.round(pos_array-size/2)
 """Luke waz here"""
 class ErgodicTrajectoryOpt(object):
-    def __init__(self, initpos, pmap, num_agents, size, shadows, craters, time_args) -> None:
+    def __init__(self, pos, pmap, num_agents, size, shadows, craters, time_args) -> None:
         time_horizon = time_args['time_horizon']
         time_step = time_args['dt']
         self.basis           = BasisFunc(n_basis=[5,5])
@@ -30,8 +30,8 @@ class ErgodicTrajectoryOpt(object):
         n,m,N = self.robot_model.n, self.robot_model.m, self.robot_model.N
         self.target_distr    = TargetDistribution(pmap, size)
         opt_args = {
-            'x0' : initpos,
-            'xf' : np.roll(initpos, 1, axis=0),
+            'x0' : pos[0],
+            'xf' : pos[1],
             'phik' : get_phik(self.target_distr.evals, self.basis)
         }
         ''' Initialize state '''
