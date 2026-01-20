@@ -119,7 +119,7 @@ class AStar:
         py.reverse()
         return px, py
 
-    def run(self, starts, goals, shadow_stack, num_agents):
+    def run(self, starts, goals, shadow_stack, num_agents, pmap=None):
         
         open_lists = []
         closed_sets = []
@@ -165,9 +165,7 @@ class AStar:
                 if next_t>t_max:
                     next_t = next_t % (t_max+1)
 
-                scaled_time = int(np.floor(next_t/5))
-
-                for neigh in self.map[i].get_neighbors(self.map[i].map[x][y], shadow_stack[scaled_time]):
+                for neigh in self.map[i].get_neighbors(self.map[i].map[x][y], shadow_stack[next_t]):
                     nx, ny = neigh.x, neigh.y
                     if shadow_stack[next_t][ny][nx]<50:
                         continue
@@ -178,6 +176,9 @@ class AStar:
                         came_from_dicts[i][next_state] = current
                         h = self.heuristic(neigh, goals[i])
                         f = new_g + h
+                        if not pmap is None:
+                            info_penalty = (1 - pmap[ny][nx])*200
+                            f+= info_penalty
                         heapq.heappush(open_lists[i], (f, new_g, nx, ny, next_t))
 
         return(final_paths)
@@ -188,7 +189,7 @@ class AStar:
 # Main demo
 # ================================================================
 
-def main(size, shadow_stack, start_array, end_array, num_agents):
+def main(size, shadow_stack, start_array, end_array, num_agents, pmap=None):
     m_stack = []
     starts = []
     goals = []
@@ -219,7 +220,7 @@ def main(size, shadow_stack, start_array, end_array, num_agents):
 
     # Run A*
     planner = AStar(m_stack)
-    final_paths = planner.run(starts, goals, shadow_stack, num_agents)
+    final_paths = planner.run(starts, goals, shadow_stack, num_agents, pmap)
 
     #print("Path length:", len(rx))
     #print("Path:", list(zip(rx, ry)))
@@ -275,25 +276,35 @@ def get_shadow_stack(path, time_args, bounds):
 
     return resized_shadow_stack, shadows_idx_stack.astype(int), shadow_map_stack
 
-def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents):
+def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents, pmap=None):
     fig, ax = plt.subplots()
     shadow_mask = np.ones((size, size))
     shadow_mask[np.where(shadow_stack[0]<50)]=0
     img = ax.imshow(shadow_mask, cmap='Greys_r', animated = True)
+
+    if not pmap is None:
+        overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True)
+        cbar = plt.colorbar(overlay)
+        cbar.ax.set_title('Information Density')
+    
     for i in range(num_agents):
         line, = ax.plot(final_paths[i][0][0], final_paths[i][1][0], color='r')
         ax.plot(start[i][0], start[i][1], 'ob')
         ax.plot(goal[i][0], goal[i][1], 'og')
-    ax.set_xlim(0,size)
-    ax.set_ylim(size,0)
-    ax.set_yticks(ax.get_xticks()[::-1])
-    ax.set_yticklabels(ax.get_xticklabels()[::-1])
+    
+    num_ticks = len(ax.get_xticks())
+    tick_labels = np.linspace(0, 16, num_ticks)
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+    plt.xlabel('km')
+    plt.ylabel('km')
 
     def update(frame, final_paths, line, img, num_agents, shadow_len):
         shadow_mask = np.ones((size, size))
-        scaled_time = int(np.floor(frame/5))
-        shadow_mask[np.where(shadow_stack[scaled_time%shadow_len]<50)]=0
+        shadow_mask[np.where(shadow_stack[frame%shadow_len]<50)]=0
         img.set_array(shadow_mask)
+        if not pmap is None:
+            overlay.set_array(pmap)
         for i in range(num_agents):
             if frame>=len(final_paths[i][0]):
                 continue
@@ -315,18 +326,20 @@ def animate_plot(final_paths, start, goal, size, shadow_stack, num_agents):
 
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 time_args = {
-    'dt': 1000,
+    'dt': 100,
     'start_time': 0,
     'end_time': 100000,
-    'time_horizon': 100
+    'time_horizon': 1000
 }
 shadow_map_stack, shadow_idx_stack, original_shadows = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
-#size = np.shape(shadow_map_stack[0])[0]
 size = np.shape(original_shadows[0])[0]
-start_pos = [[87,302], [44, 52], [283, 276]]
-end_pos  = [[150,150], [150, 150], [150, 150]]
-num_agents = 3
 
-final_paths = main(size, original_shadows, start_pos, end_pos, num_agents)
-animate_plot(final_paths, start_pos, end_pos, size, original_shadows, num_agents)
+num_agents = 3
+start_pos = np.random.randint(low=0, high = size, size = (num_agents, 2))
+end_pos = np.random.randint(low=0, high = size, size = (num_agents, 2))
+
+pmap = random_info(size)
+
+final_paths = main(size, original_shadows, start_pos, end_pos, num_agents, pmap)
+animate_plot(final_paths, start_pos, end_pos, size, original_shadows, num_agents, pmap)
 
