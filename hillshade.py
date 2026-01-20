@@ -90,43 +90,48 @@ def get_factors(num):
             factors.append(i)
     return factors
 
-def map_splitter(shadow_stack, num_cells=4, bounds=None):
-    if bounds is None:
-        if num_cells %2 == 0:
-            factors = get_factors(num_cells)
-            if len(factors) %2 == 0:
-                num_rows = factors[int(len(factors)/2 - 1)]
-                num_cols = factors[int(len(factors)/2)]
+def map_splitter(shadow_map_stack, num_cells=4, bounds=None):
+    split_shadow_stack = []
+    for shadow_map in shadow_map_stack:
+        if bounds is None:
+            if num_cells %2 == 0:
+                factors = get_factors(num_cells)
+                if len(factors) %2 == 0:
+                    num_rows = factors[int(len(factors)/2 - 1)]
+                    num_cols = factors[int(len(factors)/2)]
+                else:
+                    num_rows = int(np.median(factors))
+                    num_cols = int(np.median(factors))
             else:
-                num_rows = int(np.median(factors))
-                num_cols = int(np.median(factors))
-        else:
-            raise Exception('Map must be split into an even number of cells')
-        row = shadow_stack.shape[0]
-        col = shadow_stack.shape[1]
-        bounds = []
+                raise Exception('Map must be split into an even number of cells')
+            row = shadow_map.shape[0]
+            col = shadow_map.shape[1]
+            bounds = []
 
-        for i in range(0, num_rows):
-            y_min = int((row/num_rows)*i)
-            y_max = int((row/num_rows)*(i+1))
-            for j in range(0, num_cols):
-                x_min = int((col/num_cols)*j)
-                x_max = int((col/num_cols)*(j+1))
-                
-                bounds.append([[x_min, x_max], [y_min, y_max]])
-        bounds = np.array(bounds)
+            for i in range(0, num_rows):
+                y_min = int((row/num_rows)*i)
+                y_max = int((row/num_rows)*(i+1))
+                for j in range(0, num_cols):
+                    x_min = int((col/num_cols)*j)
+                    x_max = int((col/num_cols)*(j+1))
+                    
+                    bounds.append([[x_min, x_max], [y_min, y_max]])
+            bounds = np.array(bounds)
+        
+        split_maps = []
+        for bound in bounds:
+            cell = shadow_map[bound[1,0]:bound[1,1], bound[0,0]:bound[0,1]]
+            split_maps.append(cell)
+        
+        split_shadow_stack.append(split_maps)
     
-    split_maps = []
-    for bound in bounds:
-        cell = shadow_stack[bound[1,0]:bound[1,1]][bound[0,0]:bound[0,1]]
-        split_maps.append(cell)
-    return split_maps
+    return split_shadow_stack
         
 
 bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
-maps = map_splitter(shadow_map_stack[0])
+split_stack = map_splitter(shadow_map_stack)
 
 '''
 path = "DEMs/Site01_final_adj_5mpp_surf.tif"

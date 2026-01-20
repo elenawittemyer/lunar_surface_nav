@@ -17,8 +17,8 @@ def random_info(size, plotting=False):
     seed = np.random.randint(0, 10000)
     noise_generator = OpenSimplex(seed)
 
-    width = size
-    height = size
+    width = size[1]
+    height = size[0]
     scale = 80.0  # Controls the "zoom" level of the noise
     octaves = 1   # Number of noise layers
     persistence = .5 # How much each octave contributes

@@ -70,7 +70,9 @@ def get_colormap(n, name='hsv'):
     return plt.cm.get_cmap(name, n)
 
 def convert_pos(pos_array, size):
-    return np.round(pos_array-size/2)
+    x_conv = np.round(pos_array[:,0]-size[1]/2)
+    y_conv = np.round(pos_array[:,1]-size[0]/2)
+    return np.vstack(x_conv, y_conv).T
 
 def obstacle_pos(size):
     obstacle_coords = np.array([[100, 100], [150, 150]])
@@ -100,7 +102,7 @@ def get_shadow_stack(path, time_args):
         resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
         shadow_idx = np.where(resized_shadow_map<40)
         shadow_idx_array = scale*np.array([shadow_idx[1], shadow_idx[0]]).T
-        shadow_idx_array = convert_pos(shadow_idx_array, np.shape(shadow_map)[0])
+        shadow_idx_array = convert_pos(shadow_idx_array, [np.shape(shadow_map)[0], np.shape(shadow_map)[1]])
         shadows_idx_stack.append(shadow_idx_array)
 
     def padding(shadow_map, max_len, map_size):
@@ -193,7 +195,7 @@ time_args = {
 
 shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args)
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
-size = np.shape(shadow_map)[0]
+size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
 #crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
 #init_pos = convert_pos(crater_pos, size)
 
@@ -217,11 +219,4 @@ main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, in
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args, pmap)
 
-
-'''
-crater_idx = illuminated_craters(crater_pos_arr = np.array([[50, 30], [180, 200]]), shadow_stack = shadow_map_stack, size = size)
-crater_data = {
-    'idx' : crater_idx,
-    'rad' : np.array([10, 10])
-}
-'''
+#TODO: fix all the size issues on this page and within ErgodicTrajectoryOpt. convertpos() has already been corrected
