@@ -78,14 +78,14 @@ def obstacle_pos(size):
     return obstacle_coords
 
 
-def get_shadow_stack(path, time_args, bounds):
+def get_shadow_stack(path, time_args):
     
     time_horizon = time_args['time_horizon']
     start_time = time_args['start_time']
     end_time = time_args['end_time']
     dt = time_args['dt']
 
-    shadow_map_stack = get_shadow_map_stack(path, 'Site01', bounds, start_time, end_time, dt)
+    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, end_time, dt)
     
     if ((end_time-start_time)//dt)!=time_horizon:
         raise Exception('Time horizon and number of time steps do not match.')
@@ -185,13 +185,13 @@ def animate_plot(path_travelled, num_agents, time_args, pmap):
 
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 time_args = {
-    'dt': 1000,
+    'dt': 100,
     'start_time': 0,
-    'end_time': 100000,
+    'end_time': 10000,
     'time_horizon': 100
 }
 
-shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
+shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args)
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = np.shape(shadow_map)[0]
 #crater_pos = np.array([[87, 168], [44, 56], [92, 183]])

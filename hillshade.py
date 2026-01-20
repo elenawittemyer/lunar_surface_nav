@@ -35,7 +35,7 @@ def get_shadow_map(dem_path, scaling = 10, plotting = False):
 
         return resized_shadow_map
 
-def get_shadow_map_stack(dem_path, site_name, bounds, start_time=0, end_time=60, dt=5, scaling=10, plotting=False):
+def get_shadow_map_stack(dem_path, site_name, start_time=0, end_time=60, dt=5, scaling=10, plotting=False):
     with rasterio.open(dem_path) as src:
         dem = src.read(1)
         shadow_map_stack = []
@@ -81,6 +81,52 @@ def get_shadow_map_stack(dem_path, site_name, bounds, start_time=0, end_time=60,
             plt.show()
 
         return shadow_map_stack
+    
+
+def get_factors(num):
+    factors = []
+    for i in range(1, num+1):
+        if num%i==0:
+            factors.append(i)
+    return factors
+
+def map_splitter(shadow_stack, num_cells=4, bounds=None):
+    if bounds is None:
+        if num_cells %2 == 0:
+            factors = get_factors(num_cells)
+            if len(factors) %2 == 0:
+                num_rows = factors[int(len(factors)/2 - 1)]
+                num_cols = factors[int(len(factors)/2)]
+            else:
+                num_rows = int(np.median(factors))
+                num_cols = int(np.median(factors))
+        else:
+            raise Exception('Map must be split into an even number of cells')
+        row = shadow_stack.shape[0]
+        col = shadow_stack.shape[1]
+        bounds = []
+
+        for i in range(0, num_rows):
+            y_min = int((row/num_rows)*i)
+            y_max = int((row/num_rows)*(i+1))
+            for j in range(0, num_cols):
+                x_min = int((col/num_cols)*j)
+                x_max = int((col/num_cols)*(j+1))
+                
+                bounds.append([[x_min, x_max], [y_min, y_max]])
+        bounds = np.array(bounds)
+    
+    split_maps = []
+    for bound in bounds:
+        cell = shadow_stack[bound[1,0]:bound[1,1]][bound[0,0]:bound[0,1]]
+        split_maps.append(cell)
+    return split_maps
+        
+
+bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
+dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
+shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
+maps = map_splitter(shadow_map_stack[0])
 
 '''
 path = "DEMs/Site01_final_adj_5mpp_surf.tif"
