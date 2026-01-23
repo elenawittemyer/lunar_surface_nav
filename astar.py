@@ -242,7 +242,7 @@ def get_shadow_stack(path, time_args, bounds):
     end_time = time_args['end_time']
     dt = time_args['dt']
 
-    shadow_map_stack = get_shadow_map_stack(path, 'Site01', bounds, start_time, end_time, dt)
+    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, end_time, dt)
     
     if ((end_time-start_time)//dt)!=time_horizon:
         raise Exception('Time horizon and number of time steps do not match.')
@@ -332,14 +332,14 @@ time_args = {
     'time_horizon': 1000
 }
 shadow_map_stack, shadow_idx_stack, original_shadows = get_shadow_stack(dem_path, time_args, bounds=np.array([[0, 1000], [0, 1000]]))
-size = np.shape(original_shadows[0])[0]
+size = np.shape(original_shadows[0])
 
 num_agents = 3
-start_pos = np.random.randint(low=0, high = size, size = (num_agents, 2))
-end_pos = np.random.randint(low=0, high = size, size = (num_agents, 2))
+start_pos = np.random.randint(low=0, high = size[0], size = (num_agents, 2))
+end_pos = np.random.randint(low=0, high = size[0], size = (num_agents, 2))
 
 pmap = random_info(size)
 
-final_paths = main(size, original_shadows, start_pos, end_pos, num_agents, pmap)
-animate_plot(final_paths, start_pos, end_pos, size, original_shadows, num_agents, pmap)
+final_paths = main(size[0], original_shadows, start_pos, end_pos, num_agents, pmap)
+animate_plot(final_paths, start_pos, end_pos, size[0], original_shadows, num_agents, pmap)
 

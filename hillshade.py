@@ -204,6 +204,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
 
     return shadow_map_stack, shadows_idx_stack
 
+'''
 bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 time_args = {
@@ -216,7 +217,7 @@ time_args = {
 #shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
 #split_stack = map_splitter(shadow_map_stack)
 split_stack, split_idxs = get_split_maps_idxs(dem_path, time_args, 4)
-
+'''
 
 
 '''
