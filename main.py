@@ -93,10 +93,9 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_args, pmap):
+def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack):
     time_horizon = time_args['time_horizon']
     total_time = time_args['end_time'] - time_args['start_time']
-    extent = [0, 16000, 0, 16000]
     fps = 10
     size = pmap.shape[0]
     cmap = get_colormap(num_agents+1)
@@ -108,10 +107,13 @@ def animate_plot(path_travelled, num_agents, time_args, pmap):
 
     fig, ax = plt.subplots()
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
+    
+    '''
     num_ticks = len(ax.get_xticks())
     tick_labels = np.linspace(0, 16, num_ticks)
     ax.set_xticklabels(tick_labels)
     ax.set_yticklabels(tick_labels)
+    '''
 
     plt.xlabel('km')
     plt.ylabel('km')
@@ -153,7 +155,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 6)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -162,8 +164,8 @@ size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
 #crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
 #init_pos = convert_pos(crater_pos, size)
 
-start_pos = np.array([[87, 168], [44, 56], [283, 276]])
-end_pos  = np.array([[150,150], [150, 150], [150, 150]])
+start_pos = np.array([[20, 140], [40, 80], [140, 50]])
+end_pos  = np.array([[80,80], [80, 80], [80, 80]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
 
@@ -177,9 +179,10 @@ startstop = [init_pos, final_pos]
 
 pmap = random_info(size)
 #pmap = np.ones((size, size))
+#TODO: test without shadows
 
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args, pmap)
+animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack)
 
 #TODO: fix all the size issues on this page and within ErgodicTrajectoryOpt. convertpos() has already been corrected

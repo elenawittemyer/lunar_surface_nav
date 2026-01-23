@@ -149,7 +149,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
     for i in range(len(split_stack)):
         for j in range(num_maps):
             shadow_map = split_stack[i][j]
-            scale = 10/num_maps
+            scale = 10
             resized_x = int(shadow_map.shape[1] // scale)
             resized_y = int(shadow_map.shape[0] // scale)
             resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
