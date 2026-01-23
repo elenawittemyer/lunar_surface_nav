@@ -7,7 +7,7 @@ from multi_rover_ergodic.gaussian import gaussian
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from hillshade import get_shadow_map, get_shadow_map_stack
+from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from info_distrib import random_info
 
@@ -153,7 +153,10 @@ time_args = {
     'time_horizon': 100
 }
 
-shadow_map_stack, shadow_idx_stack = get_shadow_stack(dem_path, time_args)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 6)
+shadow_map_stack = split_shadow_stack[0]
+shadow_idx_stack = split_idx_stack[0]
+
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
 #crater_pos = np.array([[87, 168], [44, 56], [92, 183]])

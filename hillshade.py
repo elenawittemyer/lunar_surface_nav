@@ -167,15 +167,28 @@ def get_split_maps_idxs(path, time_args, num_maps):
         return np.vstack((map_idx, padded_vals))
 
     max_len = max(arr.shape[0] for arr in shadows_idx_stack)
-    for i in range(len(split_stack)): #this should be len(shadows_idx_stack). figure out how to correct with i, j
-        for j in range(num_maps):
+    for j in range(num_maps):
+        for i in range(len(split_stack)): #this should be len(shadows_idx_stack). figure out how to correct with i, j
+            idx = (j*100)+i
             map_size =  np.shape(split_stack[i][j])
-            if len(shadows_idx_stack[i*j+j])<max_len:
-                shadows_idx_stack[i*j+j] =  padding(shadows_idx_stack[i*j+j], max_len, map_size)
-                print(i*j+j)
-    shadows_idx_stack = np.array(shadows_idx_stack)
+            if len(shadows_idx_stack[idx])<max_len:
+                shadows_idx_stack[idx] =  padding(shadows_idx_stack[idx], max_len, map_size)
+    shadows_idx_stack = np.reshape(np.array(shadows_idx_stack), (len(split_stack), num_maps, max_len, 2))
+    
+    split_stack_list = []
+    idx_stack_list = []
+    for i in range(num_maps):
+        idx_stack_list.append(shadows_idx_stack[:,i])
+    
+    for i in range(num_maps):
+        cells = []
+        for j in range(len(split_stack)):
+            cell = split_stack[j][i]
+            cells.append(cell)
+        cells = np.array(cells)
+        split_stack_list.append(cells)
 
-    return split_stack, shadows_idx_stack
+    return split_stack_list, idx_stack_list
 
     shadows_idx_stack = []
     for i in range(len(shadow_map_stack)):
@@ -204,7 +217,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
 
     return shadow_map_stack, shadows_idx_stack
 
-'''
+
 bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
 time_args = {
@@ -217,7 +230,7 @@ time_args = {
 #shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
 #split_stack = map_splitter(shadow_map_stack)
 split_stack, split_idxs = get_split_maps_idxs(dem_path, time_args, 4)
-'''
+
 
 
 '''
