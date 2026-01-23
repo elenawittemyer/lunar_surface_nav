@@ -168,7 +168,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
 
     max_len = max(arr.shape[0] for arr in shadows_idx_stack)
     for i in range(len(split_stack)): #this should be len(shadows_idx_stack). figure out how to correct with i, j
-        for j in range(num_maps+1):
+        for j in range(num_maps):
             map_size =  np.shape(split_stack[i][j])
             if len(shadows_idx_stack[i*j+j])<max_len:
                 shadows_idx_stack[i*j+j] =  padding(shadows_idx_stack[i*j+j], max_len, map_size)
