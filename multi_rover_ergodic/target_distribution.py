@@ -7,10 +7,12 @@ import matplotlib.pyplot as plt
 class TargetDistribution(object):
     def __init__(self, pmap, size) -> None:
         self.n = 2
-        self.domain = np.meshgrid(
-            *[np.linspace(0.01, 0.99, size)]*self.n 
-        )
-        pmap=pmap.reshape((1, size**2))
+        #self.domain = np.meshgrid(*[np.linspace(0.01, 0.99, size)]*self.n )
+        X, Y = np.meshgrid(np.linspace(0.01, 0.99, size[0]),np.linspace(0.01, 0.99, size[1]))
+        self.domain = [X, Y]
+        
+        #pmap=pmap.reshape((1, size**2))
+        pmap = pmap.reshape((1, size[0]*size[1]))
         pmap=pmap[0]
         self._s = np.stack([X.ravel() for X in self.domain]).T
         self.evals = (

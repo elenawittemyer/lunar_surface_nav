@@ -40,7 +40,8 @@ class ErgodicTrajectoryOpt(object):
         self.init_sol = np.concatenate([x, u], axis=2) 
         def _emap(x):
             ''' Map state space to exploration space '''
-            return np.array([(x+(size/2))/size])
+            #return np.array([(x+(size/2))/size])
+            return np.array([(x+(np.array(size)/2))/np.array(size)])
         emap = vmap(_emap, in_axes=0)
 
         def barrier_cost(e):

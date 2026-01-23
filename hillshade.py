@@ -126,12 +126,98 @@ def map_splitter(shadow_map_stack, num_cells=4, bounds=None):
         split_shadow_stack.append(split_maps)
     
     return split_shadow_stack
+
+def convert_idx(idx_array, size):
+    row_conv = np.round(idx_array[:,0]-size[0]/2)
+    col_conv = np.round(idx_array[:,1]-size[1]/2)
+    return np.vstack((row_conv, col_conv)).T #TODO: fix this
         
+def get_split_maps_idxs(path, time_args, num_maps):
+    
+    time_horizon = time_args['time_horizon']
+    start_time = time_args['start_time']
+    end_time = time_args['end_time']
+    dt = time_args['dt']
+
+    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, end_time, dt)
+    split_stack = map_splitter(shadow_map_stack, num_maps)
+    
+    if ((end_time-start_time)//dt)!=time_horizon:
+        raise Exception('Time horizon and number of time steps do not match.')
+    
+    shadows_idx_stack = []
+    for i in range(len(split_stack)):
+        for j in range(num_maps):
+            shadow_map = split_stack[i][j]
+            scale = 10/num_maps
+            resized_x = int(shadow_map.shape[1] // scale)
+            resized_y = int(shadow_map.shape[0] // scale)
+            resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
+            shadow_idx = np.where(resized_shadow_map<40)
+            shadow_idx_array = scale*np.array([shadow_idx[1], shadow_idx[0]]).T
+            shadow_idx_array = convert_idx(shadow_idx_array, [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]) #rows vs cols?
+            shadows_idx_stack.append(shadow_idx_array)
+    
+    def padding(map_idx, max_len, map_size):
+        current_len = map_idx.shape[0]
+        padded_vals_x = map_size[1]*np.ones(max_len-current_len)
+        padded_vals_y = map_size[0]*np.ones(max_len-current_len)
+        padded_vals = np.vstack((padded_vals_x, padded_vals_y)).T
+        #padded_vals = map_size[0]*np.ones((max_len-current_len, 2))
+        return np.vstack((map_idx, padded_vals))
+
+    max_len = max(arr.shape[0] for arr in shadows_idx_stack)
+    for i in range(len(split_stack)): #this should be len(shadows_idx_stack). figure out how to correct with i, j
+        for j in range(num_maps+1):
+            map_size =  np.shape(split_stack[i][j])
+            if len(shadows_idx_stack[i*j+j])<max_len:
+                shadows_idx_stack[i*j+j] =  padding(shadows_idx_stack[i*j+j], max_len, map_size)
+                print(i*j+j)
+    shadows_idx_stack = np.array(shadows_idx_stack)
+
+    return split_stack, shadows_idx_stack
+
+    shadows_idx_stack = []
+    for i in range(len(shadow_map_stack)):
+        scale = 10
+        shadow_map = shadow_map_stack[i]
+        #bounds_frac = [(bounds[0,1]-bounds[0,0])/shadow_map.shape[1], (bounds[1,1]-bounds[1,0])/shadow_map.shape[0]]
+        resized_x = shadow_map.shape[1] // scale
+        resized_y = shadow_map.shape[0] // scale
+        resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
+        shadow_idx = np.where(resized_shadow_map<40)
+        shadow_idx_array = scale*np.array([shadow_idx[1], shadow_idx[0]]).T
+        shadow_idx_array = convert_pos(shadow_idx_array, [np.shape(shadow_map)[0], np.shape(shadow_map)[1]])
+        shadows_idx_stack.append(shadow_idx_array)
+
+    def padding(shadow_map, max_len, map_size):
+        current_len = shadow_map.shape[0]
+        padded_vals = map_size*np.ones((max_len-current_len, 2))
+        return np.vstack((shadow_map, padded_vals))
+
+    map_size =  np.shape(shadow_map_stack[0])[0]
+    max_len = max(arr.shape[0] for arr in shadows_idx_stack)
+    for i in range(len(shadows_idx_stack)):
+        if len(shadows_idx_stack[i])<max_len:
+            shadows_idx_stack[i] =  padding(shadows_idx_stack[i], max_len, map_size)
+    shadows_idx_stack = np.array(shadows_idx_stack)
+
+    return shadow_map_stack, shadows_idx_stack
 
 bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
 dem_path = "DEMs/Site01_final_adj_5mpp_surf.tif"
-shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
-split_stack = map_splitter(shadow_map_stack)
+time_args = {
+    'dt': 100,
+    'start_time': 0,
+    'end_time': 10000,
+    'time_horizon': 100
+}
+
+#shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
+#split_stack = map_splitter(shadow_map_stack)
+split_stack, split_idxs = get_split_maps_idxs(dem_path, time_args, 4)
+
+
 
 '''
 path = "DEMs/Site01_final_adj_5mpp_surf.tif"
