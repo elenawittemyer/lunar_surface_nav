@@ -155,7 +155,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 16)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -179,7 +179,7 @@ startstop = [init_pos, final_pos]
 
 pmap = random_info(size)
 #pmap = np.ones((size, size))
-#shadow_idx_stack = np.ones((100, 1, 2))*50
+shadow_idx_stack = np.ones((100, 1, 2))*50
 
 
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
@@ -189,6 +189,7 @@ animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack)
 
 #TODO: there are still some size issues in the generated paths for non-square maps
 #TODO: brainstorm ways to reduce the number of constraints (avoid only the nearest shadows? think of how to do this)
+#TODO: shadow avoidance doesn't seem to be working for custom map sizes - is shadow_idx in the right place (x vs y)?
 
 '''
 shadows = shadow_idx_stack
