@@ -47,33 +47,6 @@ class ErgodicTrajectoryOpt(object):
         def barrier_cost(e):
             """ Barrier function to avoid robot going out of workspace """
             return (np.maximum(0, e-1) + np.maximum(0, -e))**2
-        
-        def shadow_cost(x, pmap):
-            pmap_local = np.array(pmap)
-            x_coords = np.reshape(x, (time_horizon*num_agents, 2))
-            row_idx = np.clip((x_coords[:,0] + size/2).astype(int), 0, pmap.shape[0]-1)
-            col_idx = np.clip((x_coords[:,1] + size/2).astype(int), 0, pmap.shape[0]-1)
-            def get_value(row, col):
-                return pmap_local[row, col]
-            pmap_vals = vmap(get_value)(row_idx, col_idx)
-            return np.sum(100-pmap_vals)
-        
-        def landmark_dist_penalty(x):
-            crater_idx = craters['idx']
-            crater_rad = craters['rad']
-            def total_crater_dist(x, crater):
-                def single_crater_dist(x, crater_i):
-                    def single_crater_dist_t(x_t, crater_t):
-                        return np.linalg.norm(x_t-crater_t)
-                    return vmap(single_crater_dist_t, in_axes=(0, None))(x, crater_i)
-                return vmap(single_crater_dist, in_axes = (None, 0))(x, crater)
-            overkill_penalty = vmap(total_crater_dist, in_axes=(None, 0))(x, crater_idx)
-            
-            def get_slice(a_i, i):
-                return a_i[:, i]
-
-            penalty = vmap(get_slice)(overkill_penalty, np.arange(time_horizon))
-            return np.sum(penalty)
 
         @jit
         def loss(z, args):
@@ -102,15 +75,16 @@ class ErgodicTrajectoryOpt(object):
         def ineq_constr(z,args):
             """ control inequality constraints"""
             x, u = z[:, :, :n], z[:, :, n:]
-            control_constraint =  abs(u)-1.
+            control_constraint =  abs(u)-5.
             
             def dist_to_shadow(obstacle, x_t):
-                dist = np.linalg.norm(x_t - obstacle, axis=1).flatten()
-                constraint_vals = 10 - dist
+                dist_sq = np.sum((x_t - obstacle)**2, axis=1)
+                constraint_vals = (10.0**2) - dist_sq
                 return constraint_vals
             
             def dist_t(shadow_t, x_t):
                 shadow_constraint_t_k = vmap(dist_to_shadow, in_axes=(0, None))(shadow_t, x_t)
+                return np.maximum(shadow_constraint_t_k, 0)
                 return shadow_constraint_t_k
             
             def get_shadow_constraint_t(shadow_t, x):
@@ -123,6 +97,9 @@ class ErgodicTrajectoryOpt(object):
                 return a_i[i, :, :]
 
             shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(time_horizon))
+            #shadow_constraint = np.array([np.sum(shadow_constraint)])
+            #TODO: just extract the twenty lowest values?
+
             def step_diff(x):
                 diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1)
                 return diff

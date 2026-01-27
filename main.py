@@ -155,7 +155,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 16)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -164,8 +164,8 @@ size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
 #crater_pos = np.array([[87, 168], [44, 56], [92, 183]])
 #init_pos = convert_pos(crater_pos, size)
 
-start_pos = np.array([[20, 140], [40, 80], [140, 50]])
-end_pos  = np.array([[80,80], [80, 80], [80, 80]])
+start_pos = np.array([[30, 70], [40, 70], [50, 70]])
+end_pos  = np.array([[40,40], [40, 40], [40, 40]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
 
@@ -179,10 +179,54 @@ startstop = [init_pos, final_pos]
 
 pmap = random_info(size)
 #pmap = np.ones((size, size))
-#TODO: test without shadows
+#shadow_idx_stack = np.ones((100, 1, 2))*50
+
 
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack)
 
-#TODO: fix all the size issues on this page and within ErgodicTrajectoryOpt. convertpos() has already been corrected
+
+#TODO: there are still some size issues in the generated paths for non-square maps
+#TODO: brainstorm ways to reduce the number of constraints (avoid only the nearest shadows? think of how to do this)
+
+'''
+shadows = shadow_idx_stack
+
+x = np.linspace(init_pos, final_pos, 100, endpoint=True)
+u = np.zeros((100, 3, 2))
+
+control_constraint =  abs(u)-5.
+
+def dist_to_shadow(obstacle, x_t):
+    dist_sq = np.sum((x_t - obstacle)**2, axis=1)
+    constraint_vals = (10.0**2) - dist_sq
+    return constraint_vals
+
+def dist_t(shadow_t, x_t):
+    shadow_constraint_t_k = vmap(dist_to_shadow, in_axes=(0, None))(shadow_t, x_t)
+    return np.maximum(shadow_constraint_t_k, 0)
+    return shadow_constraint_t_k
+
+def get_shadow_constraint_t(shadow_t, x):
+    shadow_constraint_t = vmap(dist_t, in_axes=(None, 0))(shadow_t, x)
+    return shadow_constraint_t
+
+overkill_shadow_constraint = vmap(get_shadow_constraint_t, in_axes=(0, None))(shadows, x) 
+
+def get_slice(a_i, i):
+    return a_i[i, :, :]
+
+shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(100))
+shadow_constraint = np.sum(shadow_constraint)
+
+def step_diff(x):
+    diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1)
+    return diff
+x_arg = np.transpose(x, (1, 0, 2))
+step_constr = vmap(step_diff)(x_arg)
+upper_step_constr = step_constr - 10
+#lower_step_constr = 1 - step_constr
+
+_g = np.concatenate((shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
+'''
