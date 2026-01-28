@@ -155,7 +155,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 20)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -165,7 +165,7 @@ size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
 #init_pos = convert_pos(crater_pos, size)
 
 start_pos = np.array([[30, 70], [40, 70], [50, 70]])
-end_pos  = np.array([[40,40], [40, 40], [40, 40]])
+end_pos  = np.array([[50,40], [50, 40], [50, 40]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
 
@@ -181,6 +181,10 @@ pmap = random_info(size)
 #pmap = np.ones((size, size))
 shadow_idx_stack = np.ones((100, 1, 2))*50
 
+x_shadow = np.floor(np.linspace(10,20,50))
+x_shadow.at[-1].set(20)
+y_shadow = np.tile(np.arange(0,10), 5)
+shadow_idx_stack = np.tile(np.vstack((x_shadow, y_shadow)).T, (100, 1, 1))
 
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
 path_travelled = np.load('path_data.npy')
