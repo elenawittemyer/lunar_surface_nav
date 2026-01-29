@@ -93,7 +93,7 @@ def illuminated_craters(crater_pos_arr, shadow_stack, size):
     # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
 
 
-def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack):
+def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack, test=None):
     time_horizon = time_args['time_horizon']
     total_time = time_args['end_time'] - time_args['start_time']
     fps = 10
@@ -106,7 +106,8 @@ def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack):
         pos_y.append(np.array(path_travelled[i][1]).flatten())
 
     fig, ax = plt.subplots()
-    img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
+    #img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
+    img = ax.imshow(test, cmap='Greys_r', origin='upper', animated = True)
     
     '''
     num_ticks = len(ax.get_xticks())
@@ -134,7 +135,8 @@ def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack):
 
     
     def updatefig(frame, img, traj, ax):
-        img.set_array(shadow_map_stack[frame])
+        #img.set_array(shadow_map_stack[frame])
+        img.set_array(test)
         overlay.set_array(pmap)
         for i in range(num_agents):
             line = [[pos_x[i][frame], pos_x[i][frame+1]], [pos_y[i][frame], pos_y[i][frame+1]]]
@@ -155,7 +157,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 20)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 16)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -181,14 +183,18 @@ pmap = random_info(size)
 #pmap = np.ones((size, size))
 shadow_idx_stack = np.ones((100, 1, 2))*50
 
-x_shadow = np.floor(np.linspace(10,20,50))
-x_shadow.at[-1].set(20)
-y_shadow = np.tile(np.arange(0,10), 5)
+x_shadow = np.floor(np.linspace(10,25,150)).astype(int)
+x_shadow.at[-1].set(25)
+y_shadow = np.tile(np.arange(0,10), 15).astype(int)
 shadow_idx_stack = np.tile(np.vstack((x_shadow, y_shadow)).T, (100, 1, 1))
+shadow_map_test = np.ones(shadow_map.shape)
+for i in range(len(shadow_idx_stack[0])):
+    shadow_map_test = shadow_map_test.at[shadow_idx_stack[0][i][0], shadow_idx_stack[0][i][1]].set(0)
+
 
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack)
+animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack, shadow_map_test)
 
 
 #TODO: there are still some size issues in the generated paths for non-square maps
