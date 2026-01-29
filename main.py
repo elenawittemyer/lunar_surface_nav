@@ -183,8 +183,8 @@ pmap = random_info(size)
 #pmap = np.ones((size, size))
 shadow_idx_stack = np.ones((100, 1, 2))*50
 
-x_shadow = np.floor(np.linspace(10,25,150)).astype(int)
-x_shadow.at[-1].set(25)
+x_shadow = np.floor(np.linspace(10,40,150)).astype(int)
+x_shadow.at[-1].set(40)
 y_shadow = np.tile(np.arange(0,10), 15).astype(int)
 shadow_idx_stack = np.tile(np.vstack((x_shadow, y_shadow)).T, (100, 1, 1))
 shadow_map_test = np.ones(shadow_map.shape)
