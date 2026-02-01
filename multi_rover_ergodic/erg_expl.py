@@ -72,11 +72,23 @@ class ErgodicTrajectoryOpt(object):
                 (x[-1] - xf).flatten()
             ])
 
+        def idx_to_world(idx, size):
+            # idx = [row, col]
+            return np.array([
+                idx[1] - size[1] / 2, # x
+                idx[0] - size[0] / 2  # y
+                ])
+        
+        shadows_t_s = lambda s:idx_to_world(s, size)
+        shadows_t = lambda t:vmap(shadows_t_s)(t)
+        shadows_world = vmap(shadows_t)(shadows)
+        
         def ineq_constr(z,args):
             """ control inequality constraints"""
             x, u = z[:, :, :n], z[:, :, n:]
             control_constraint =  abs(u)-5.
             
+            '''
             def dist_to_shadow(obstacle, x_t):
                 dist_sq = np.sum((x_t - obstacle)**2, axis=1)
                 constraint_vals = (10.0**2) - dist_sq
@@ -98,7 +110,13 @@ class ErgodicTrajectoryOpt(object):
 
             shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(time_horizon))
             #shadow_constraint = np.array([np.sum(shadow_constraint)])
-            #TODO: just extract the twenty lowest values?
+            '''
+
+            def shadow_constraint_t(shadow_t, x_t):
+
+                dist_sq = vmap(lambda obs: np.sum((x_t - obs)**2, axis=1))(shadow_t)
+                return np.maximum(10.0**2 - dist_sq, 0)
+            shadow_constraint = vmap(shadow_constraint_t)(shadows_world, x)
 
             def step_diff(x):
                 diff = np.linalg.norm(x[1:]-x[0:-1], axis = 1)

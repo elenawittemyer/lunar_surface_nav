@@ -180,13 +180,14 @@ final_pos = convert_pos(final_pos, size)
 startstop = [init_pos, final_pos]
 
 pmap = random_info(size)
-#pmap = np.ones((size, size))
-shadow_idx_stack = np.ones((100, 1, 2))*50
+#pmap = np.ones((size[0], size[1]))
+#shadow_idx_stack = np.ones((100, 1, 2))*50
 
-x_shadow = np.floor(np.linspace(10,40,150)).astype(int)
-x_shadow.at[-1].set(40)
-y_shadow = np.tile(np.arange(0,10), 15).astype(int)
-shadow_idx_stack = np.tile(np.vstack((x_shadow, y_shadow)).T, (100, 1, 1))
+#this is for testing if shadow avoidance is actually working
+x_shadow = np.floor(np.linspace(10,40,300)).astype(int)
+x_shadow.at[-1].set(25)
+y_shadow = np.tile(np.arange(30,40), 30).astype(int)
+shadow_idx_stack = np.tile(np.vstack((y_shadow, x_shadow)).T, (100, 1, 1))
 shadow_map_test = np.ones(shadow_map.shape)
 for i in range(len(shadow_idx_stack[0])):
     shadow_map_test = shadow_map_test.at[shadow_idx_stack[0][i][0], shadow_idx_stack[0][i][1]].set(0)
