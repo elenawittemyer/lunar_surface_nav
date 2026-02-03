@@ -154,21 +154,20 @@ def get_split_maps_idxs(path, time_args, num_maps):
             resized_y = int(shadow_map.shape[0] // scale)
             resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
             shadow_idx = np.where(resized_shadow_map<40)
-            shadow_idx_array = scale*np.array([shadow_idx[1], shadow_idx[0]]).T
-            shadow_idx_array = convert_idx(shadow_idx_array, [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]) #rows vs cols?
+            shadow_idx_array = scale*np.array([shadow_idx[0], shadow_idx[1]]).T
             shadows_idx_stack.append(shadow_idx_array)
     
     def padding(map_idx, max_len, map_size):
         current_len = map_idx.shape[0]
-        padded_vals_x = map_size[1]*np.ones(max_len-current_len)
-        padded_vals_y = map_size[0]*np.ones(max_len-current_len)
+        padded_vals_x = map_size[0]*np.ones(max_len-current_len)
+        padded_vals_y = map_size[1]*np.ones(max_len-current_len)
         padded_vals = np.vstack((padded_vals_x, padded_vals_y)).T
         #padded_vals = map_size[0]*np.ones((max_len-current_len, 2))
         return np.vstack((map_idx, padded_vals))
 
     max_len = max(arr.shape[0] for arr in shadows_idx_stack)
     for j in range(num_maps):
-        for i in range(len(split_stack)): #this should be len(shadows_idx_stack). figure out how to correct with i, j
+        for i in range(len(split_stack)):
             idx = (j*100)+i
             map_size =  np.shape(split_stack[i][j])
             if len(shadows_idx_stack[idx])<max_len:
@@ -229,7 +228,7 @@ time_args = {
 
 #shadow_map_stack = get_shadow_map_stack(dem_path, 'Site01')
 #split_stack = map_splitter(shadow_map_stack)
-split_stack, split_idxs = get_split_maps_idxs(dem_path, time_args, 4)
+split_stack, split_idxs = get_split_maps_idxs(dem_path, time_args, 6)
 
 
 

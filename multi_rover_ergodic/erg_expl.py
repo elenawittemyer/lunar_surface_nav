@@ -17,9 +17,6 @@ from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import time
     
-def convert_pos(pos_array, size):
-    return np.round(pos_array-size/2)
-"""Luke waz here"""
 class ErgodicTrajectoryOpt(object):
     def __init__(self, pos, pmap, num_agents, size, shadows, craters, time_args) -> None:
         time_horizon = time_args['time_horizon']
@@ -38,10 +35,11 @@ class ErgodicTrajectoryOpt(object):
         x = np.linspace(opt_args['x0'], opt_args['xf'], time_horizon, endpoint=True)
         u = np.zeros((time_horizon, N, m))
         self.init_sol = np.concatenate([x, u], axis=2) 
+
         def _emap(x):
             ''' Map state space to exploration space '''
-            #return np.array([(x+(size/2))/size])
-            return np.array([(x+(np.array(size)/2))/np.array(size)])
+            width_height = np.flip(np.array(size))
+            return np.array([(x+(np.array(width_height)/2))/np.array(width_height)])
         emap = vmap(_emap, in_axes=0)
 
         def barrier_cost(e):
@@ -58,9 +56,7 @@ class ErgodicTrajectoryOpt(object):
             erg_m = self.erg_metric(ck, phik)
             return 1000 * erg_m \
                     + np.mean(u**2) \
-                    + np.sum(barrier_cost(e)) \
-                    #+ landmark_dist_penalty(x)
-                    #+ shadow_cost(x, pmap)
+                    + np.sum(barrier_cost(e)) 
         def eq_constr(z, args):
             """ dynamic equality constriants """
             x, u = z[:, :, :n], z[:, :, n:]
@@ -73,10 +69,10 @@ class ErgodicTrajectoryOpt(object):
             ])
 
         def idx_to_world(idx, size):
-            # idx = [row, col]
+            #idx = [row, col]
             return np.array([
-                idx[1] - size[1] / 2, # x
-                idx[0] - size[0] / 2  # y
+                idx[1] - size[1] / 2, #x
+                idx[0] - size[0] / 2  #y
                 ])
         
         shadows_t_s = lambda s:idx_to_world(s, size)
@@ -87,33 +83,8 @@ class ErgodicTrajectoryOpt(object):
             """ control inequality constraints"""
             x, u = z[:, :, :n], z[:, :, n:]
             control_constraint =  abs(u)-5.
-            
-            '''
-            def dist_to_shadow(obstacle, x_t):
-                dist_sq = np.sum((x_t - obstacle)**2, axis=1)
-                constraint_vals = (10.0**2) - dist_sq
-                return constraint_vals
-            
-            def dist_t(shadow_t, x_t):
-                shadow_constraint_t_k = vmap(dist_to_shadow, in_axes=(0, None))(shadow_t, x_t)
-                return np.maximum(shadow_constraint_t_k, 0)
-                return shadow_constraint_t_k
-            
-            def get_shadow_constraint_t(shadow_t, x):
-                shadow_constraint_t = vmap(dist_t, in_axes=(None, 0))(shadow_t, x)
-                return shadow_constraint_t
-
-            overkill_shadow_constraint = vmap(get_shadow_constraint_t, in_axes=(0, None))(shadows, x) 
-
-            def get_slice(a_i, i):
-                return a_i[i, :, :]
-
-            shadow_constraint = vmap(get_slice)(overkill_shadow_constraint, np.arange(time_horizon))
-            #shadow_constraint = np.array([np.sum(shadow_constraint)])
-            '''
 
             def shadow_constraint_t(shadow_t, x_t):
-
                 dist_sq = vmap(lambda obs: np.sum((x_t - obs)**2, axis=1))(shadow_t)
                 return np.maximum(10.0**2 - dist_sq, 0)
             shadow_constraint = vmap(shadow_constraint_t)(shadows_world, x)
