@@ -145,17 +145,17 @@ def get_split_maps_idxs(path, time_args, num_maps):
     if ((end_time-start_time)//dt)!=time_horizon:
         raise Exception('Time horizon and number of time steps do not match.')
     
-    shadows_idx_stack = []
+    shadows_idx_stack_list = []
     for i in range(len(split_stack)):
         for j in range(num_maps):
             shadow_map = split_stack[i][j]
-            scale = 10
+            scale = 5
             resized_x = int(shadow_map.shape[1] // scale)
             resized_y = int(shadow_map.shape[0] // scale)
             resized_shadow_map = cv2.resize(shadow_map, (resized_x, resized_y), interpolation=cv2.INTER_AREA)
-            shadow_idx = np.where(resized_shadow_map<40)
+            shadow_idx = np.where(resized_shadow_map<50)
             shadow_idx_array = scale*np.array([shadow_idx[0], shadow_idx[1]]).T
-            shadows_idx_stack.append(shadow_idx_array)
+            shadows_idx_stack_list.append(shadow_idx_array)
     
     def padding(map_idx, max_len, map_size):
         current_len = map_idx.shape[0]
@@ -164,14 +164,24 @@ def get_split_maps_idxs(path, time_args, num_maps):
         padded_vals = np.vstack((padded_vals_x, padded_vals_y)).T
         return np.vstack((map_idx, padded_vals))
 
-    max_len = max(arr.shape[0] for arr in shadows_idx_stack)
+    
+    shadows_idx_stack = []
+    max_len = max(arr.shape[0] for arr in shadows_idx_stack_list)
     for j in range(num_maps):
         for i in range(len(split_stack)):
             idx = (j*100)+i
             map_size =  np.shape(split_stack[i][j])
-            if len(shadows_idx_stack[idx])<max_len:
-                shadows_idx_stack[idx] =  padding(shadows_idx_stack[idx], max_len, map_size)
-    shadows_idx_stack = np.reshape(np.array(shadows_idx_stack), (len(split_stack), num_maps, max_len, 2))
+            if len(shadows_idx_stack_list[idx])<max_len:
+                shadows_idx_stack_list[idx] =  padding(shadows_idx_stack_list[idx], max_len, 2*map_size)
+    shadows_idx_stack = np.reshape(np.array(shadows_idx_stack_list), (len(split_stack), num_maps, max_len, 2))
+    
+    '''
+    shadows_idx_stack = []
+    for i in range(len(split_stack)):
+        N = num_maps
+        shadows_idx_stack.append(shadows_idx_stack_list[i*N:(i+1)*N])
+    shadows_idx_stack = np.array(shadows_idx_stack, dtype=object)
+    '''
     
     split_stack_list = []
     idx_stack_list = []

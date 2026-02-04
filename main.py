@@ -157,7 +157,7 @@ time_args = {
     'time_horizon': 100
 }
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 6)
+split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 

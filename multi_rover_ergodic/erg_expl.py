@@ -86,7 +86,7 @@ class ErgodicTrajectoryOpt(object):
 
             def shadow_constraint_t(shadow_t, x_t):
                 dist_sq = vmap(lambda obs: np.sum((x_t - obs)**2, axis=1))(shadow_t)
-                return np.maximum(10.0**2 - dist_sq, 0)
+                return np.maximum(5.0**2 - dist_sq, 0)
             shadow_constraint = vmap(shadow_constraint_t)(shadows_world, x)
 
             def step_diff(x):
@@ -97,7 +97,8 @@ class ErgodicTrajectoryOpt(object):
             upper_step_constr = step_constr - 10
             #lower_step_constr = 1 - step_constr
             
-            _g = np.concatenate((shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
+            sc_weight = 1
+            _g = np.concatenate((sc_weight*shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
             
             return _g
         
