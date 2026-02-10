@@ -11,7 +11,7 @@ from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from info_distrib import random_info
 
-def main(num_agents, map_size, time_args, info_map=None, pos=None, plot=True, shadows = None, craters = None):
+def main(num_agents, map_size, time_args, info_map=None, pos=None, plot=False, shadows = None):
     if info_map is None:
         info_map = sample_map(map_size) #fix
     if pos is None:
@@ -20,7 +20,7 @@ def main(num_agents, map_size, time_args, info_map=None, pos=None, plot=True, sh
         
     path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
 
-    traj_opt = ErgodicTrajectoryOpt(pos, info_map, num_agents, map_size, shadows, craters, time_args)
+    traj_opt = ErgodicTrajectoryOpt(pos, info_map, num_agents, map_size, shadows, time_args)
     for k in range(100):
         traj_opt.solver.solve(max_iter=1000)
         sol = traj_opt.solver.get_solution()
@@ -38,19 +38,28 @@ def main(num_agents, map_size, time_args, info_map=None, pos=None, plot=True, sh
         for i in range(num_agents):
             ax.plot(np.array(path_travelled[i][0]).flatten(), np.array(path_travelled[i][1]).flatten(),  c=cmap(i), label='Agent ' + str(i + 1))
         plt.legend(bbox_to_anchor=(1.2, 1.1), loc='upper right', framealpha=1)
-
-        '''
-        if shadows!=None:
-            obstacles = np.round(shadows + map_size/2)
-            for obstacle in obstacles:
-                circle = patches.Circle([obstacle[0], obstacle[1]], radius=10)
-                ax.add_patch(circle)
-        '''
-
         plt.show()
 
     return path_travelled
 
+def main_sequential(num_agents, time_args, num_cells, map_size, info_map=None, shadow_idx_stack = None):
+    
+    path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
+    rows, cols = get_factors(num_cells)
+    seq_shadows, startstop_list, world_offset = sort_sequential(shadow_idx_stack, rows, cols, map_size, num_agents, num_cells)
+
+    for i in range(num_cells):
+        traj_opt = ErgodicTrajectoryOpt(startstop_list[i], info_map, num_agents, map_size, seq_shadows[i], time_args)
+        for k in range(100):
+            traj_opt.solver.solve(max_iter=1000)
+            sol = traj_opt.solver.get_solution()
+            #clear_output(wait=False)
+
+        for n in range(num_agents):
+            path_travelled[n][0].append(sol['x'][:,n][:,0]+(world_offset[i][0] + map_size[1]/2))
+            path_travelled[n][1].append(sol['x'][:,n][:,1]+(world_offset[i][1] + map_size[0]/2))
+
+    np.save('path_data.npy', path_travelled)
 ### Helpers ###########################################
 
 def sample_map(size, peaks=3):
@@ -70,32 +79,91 @@ def get_colormap(n, name='hsv'):
     return plt.cm.get_cmap(name, n)
 
 def convert_pos(pos_array, size):
-    x_conv = np.round(pos_array[:,0]-size[1]/2)
-    y_conv = np.round(pos_array[:,1]-size[0]/2)
-    return np.vstack((x_conv, y_conv)).T #TODO: fix this
+    x_conv = np.round(pos_array[:,1]-size[1]/2)
+    y_conv = np.round(pos_array[:,0]-size[0]/2)
+    return np.vstack((x_conv, y_conv)).T
 
-def obstacle_pos(size):
-    obstacle_coords = np.array([[100, 100], [150, 150]])
-    obstacle_coords = convert_pos(obstacle_coords, size)
-    return obstacle_coords
+def get_factors(num):
+    factors = []
+    for i in range(1, num+1):
+        if num%i==0:
+            factors.append(i)
+    factors = np.array(factors)
+    if len(factors) %2 == 0:
+        num_rows = factors[int(len(factors)/2 - 1)]
+        num_cols = factors[int(len(factors)/2)]
+    else:
+        num_rows = int(np.median(factors))
+        num_cols = int(np.median(factors))
+    return num_rows, num_cols
 
-def illuminated_craters(crater_pos_arr, shadow_stack, size):
-    landmark_idx = []
-    for i in range(len(shadow_stack)):
-        crater_pos_idx = convert_pos(crater_pos_arr, size).astype(int)
-        crater_pos_tuple = tuple((crater_pos_idx[:,0], crater_pos_idx[:,1]))
-        crater_light_vals = shadow_stack[i][crater_pos_tuple]
-        landmark_pos = crater_pos_idx[np.where(crater_light_vals>50)]
-        landmark_idx.append(crater_pos_idx[np.where(crater_light_vals>50)])
+def cell_paths(rows, cols, size):
+    start_pos = []
+    end_pos = []
+    world_offset = []
 
-    return np.array(landmark_idx)
-    #TODO: this doesn't work because the landmark idx values are not all the same size so an array can't be formed (for jit, they all have to be the same size).
-    # need to consider what to set 'landmark_idx' to when neither craters are illuminated since this idx is associated with a cost
+    for i in range(rows):
+        for j in range(cols):
+            if i%2==0:
+                if j==0:
+                    start_pos.append([0, size[1]//2])
+                    end_pos.append([size[0]//2, size[1]])
+                elif j==(rows-1):
+                    start_pos.append([size[0]//2, 0])
+                    end_pos.append([size[0], size[1]//2])
+                else:
+                    start_pos.append([size[0]//2, 0])
+                    end_pos.append([size[0]//2, size[1]])
+            if i%2==1:
+                if j==(rows-1):
+                    start_pos.append([0, size[1]//2])
+                    end_pos.append([size[0]//2, 0])
+                elif j==0:
+                    start_pos.append([size[0]//2, size[1]])
+                    end_pos.append([size[0], size[1]//2])
+                else:
+                    start_pos.append([size[0]//2, size[1]])
+                    end_pos.append([size[0]//2, 0])
+        
+            world_offset.append([j*size[1], i*size[0]])
 
+    return start_pos, end_pos, world_offset
 
-def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack, test=None):
-    time_horizon = time_args['time_horizon']
-    total_time = time_args['end_time'] - time_args['start_time']
+def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells):
+    start_pos, end_pos, world_offset = cell_paths(rows, cols, size)
+    shadow_dims = np.shape(np.array(shadow_idx_stack))
+    seq_shadow_idx_stack = []
+    seq_start = []
+    seq_end = []
+    seq_world_offset = []
+
+    for i in range(rows):
+        if i%2==0:
+            seq_shadow_idx_stack.append(shadow_idx_stack[i*cols:(i+1)*cols])
+            seq_start.append(start_pos[i*cols:(i+1)*cols])
+            seq_end.append(end_pos[i*cols:(i+1)*cols])
+            seq_world_offset.append(world_offset[i*cols:(i+1)*cols])
+        else:
+            seq_shadow_idx_stack.append(shadow_idx_stack[i*cols:(i+1)*cols][::-1])
+            seq_start.append(start_pos[i*cols:(i+1)*cols][::-1])
+            seq_end.append(end_pos[i*cols:(i+1)*cols][::-1])
+            seq_world_offset.append(world_offset[i*cols:(i+1)*cols][::-1])
+
+    seq_start = np.reshape(np.array(seq_start), (num_cells, 2))
+    seq_end = np.reshape(np.array(seq_end), (num_cells, 2))
+    seq_world_offset = np.reshape(np.array(seq_world_offset), (num_cells, 2))
+    seq_shadow_idx_stack = np.reshape(np.array(seq_shadow_idx_stack), shadow_dims)
+    
+    startstop_list = []
+    for k in range(len(seq_start)):
+        start = convert_pos(np.tile(seq_start[k], (num_agents, 1)), size)
+        stop = convert_pos(np.tile(seq_end[k], (num_agents, 1)), size)
+        startstop_list.append([start, stop])
+    
+    return seq_shadow_idx_stack, startstop_list, seq_world_offset
+
+def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stack, num_cells=1):
+    
     fps = 10
     size = pmap.shape[0]
     cmap = get_colormap(num_agents+1)
@@ -107,8 +175,6 @@ def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack, 
 
     fig, ax = plt.subplots()
     img = ax.imshow(shadow_map_stack[0], cmap='Greys_r', origin='upper', animated = True)
-    #img = ax.imshow(test, cmap='Greys_r', origin='upper', animated = True)
-    
     '''
     num_ticks = len(ax.get_xticks())
     tick_labels = np.linspace(0, 16, num_ticks)
@@ -119,14 +185,11 @@ def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack, 
     plt.xlabel('km')
     plt.ylabel('km')
     #plt.title('Timescale x' + str(total_time/(time_horizon/fps)))
+    
+    '''
     overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True)
     cbar = plt.colorbar(overlay)
     cbar.ax.set_title('Information Density')
-    
-    '''
-    for crater in craters:
-        circle = patches.Circle([crater[0], crater[1]], radius=10)
-        ax.add_patch(circle)
     '''
 
     for i in range(num_agents):
@@ -134,18 +197,20 @@ def animate_plot(path_travelled, num_agents, time_args, pmap, shadow_map_stack, 
         traj, = ax.plot(line[0], line[1], c=cmap(i))
 
     
+    max_frames = len(shadow_map_stack)
     def updatefig(frame, img, traj, ax):
-        img.set_array(shadow_map_stack[frame])
-        #img.set_array(test)
-        overlay.set_array(pmap)
+        img.set_array(shadow_map_stack[frame%time_horizon])
+        #overlay.set_array(pmap)
         for i in range(num_agents):
             line = [[pos_x[i][frame], pos_x[i][frame+1]], [pos_y[i][frame], pos_y[i][frame+1]]]
             traj, = ax.plot(line[0],line[1], c=cmap(i))
         return img, traj
 
-    ani = FuncAnimation(fig, updatefig, frames=time_horizon, fargs=(img, traj, ax), blit=True)
+    ani = FuncAnimation(fig, updatefig, frames=time_horizon*num_cells, fargs=(img, traj, ax), blit=True)
     FFwriter = FFMpegWriter(fps=fps, codec='libx264', bitrate=1800)
     ani.save('shadow_avoidance.mp4', writer=FFwriter)
+
+
 
 #######################################################
 
@@ -156,14 +221,14 @@ time_args = {
     'end_time': 10000,
     'time_horizon': 100
 }
+num_cells = 16
 
-split_shadow_stack, split_idx_stack = get_split_maps_idxs(dem_path, time_args, 4)
+split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
-
 start_pos = np.array([[30, 70], [40, 70], [50, 70]])
 end_pos  = np.array([[70,40], [70, 40], [70, 40]])
 init_pos = convert_pos(start_pos, size)
@@ -172,12 +237,20 @@ startstop = [init_pos, final_pos]
 pmap = random_info(size)
 
 # for testing:
-#pmap = np.ones((size[0], size[1]))
+pmap = np.ones((size[0], size[1]))
 #shadow_idx_stack = np.ones((100, 1, 2))*50
 
-main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack, craters=None)
+'''
+main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack)
 path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args, pmap, shadow_map_stack)
+animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stack)
+'''
 
-#TODO: get rid of shadow padding if possible
+size = [np.shape(split_shadow_stack[0][0])[0], np.shape(split_shadow_stack[0][1])[1]]
+main_sequential(3, time_args, num_cells, map_size = size, info_map=pmap, shadow_idx_stack=split_idx_stack)
+path_travelled = np.load('path_data.npy')
+animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow_stack, num_cells)
+
 #TODO: make scaling depend on map size
+#TODO: something weird is happening with cellspaths() when rows!=cols
+#TODO: all agents still aren't showing in plotting. ask chatgpt

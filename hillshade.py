@@ -196,7 +196,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
         cells = np.array(cells)
         split_stack_list.append(cells)
 
-    return split_stack_list, idx_stack_list
+    return split_stack_list, idx_stack_list, shadow_map_stack
 
 
 bounds = np.array([[[0, 10], [0, 10]], [[10, 20], [10, 20]]]) #[[x_min, x_max], [y_min, y_max]]
