@@ -46,10 +46,10 @@ def main_sequential(num_agents, time_args, num_cells, map_size, info_map=None, s
     
     path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
     rows, cols = get_factors(num_cells)
-    seq_shadows, startstop_list, world_offset = sort_sequential(shadow_idx_stack, rows, cols, map_size, num_agents, num_cells)
+    seq_shadows, startstop_list, world_offset, seq_pmap = sort_sequential(shadow_idx_stack, rows, cols, map_size, num_agents, num_cells, info_map)
 
     for i in range(num_cells):
-        traj_opt = ErgodicTrajectoryOpt(startstop_list[i], info_map, num_agents, map_size, seq_shadows[i], time_args)
+        traj_opt = ErgodicTrajectoryOpt(startstop_list[i], seq_pmap[i], num_agents, map_size, seq_shadows[i], time_args)
         for k in range(100):
             traj_opt.solver.solve(max_iter=1000)
             sol = traj_opt.solver.get_solution()
@@ -97,25 +97,28 @@ def get_factors(num):
         num_cols = int(np.median(factors))
     return num_rows, num_cols
 
-def cell_paths(rows, cols, size):
+def cell_paths(rows, cols, size, custom_start = [120,0]):
     start_pos = []
     end_pos = []
     world_offset = []
 
     for i in range(rows):
         for j in range(cols):
-            if i%2==0:
+            if (i==0 and j==0):
+                start_pos.append(custom_start)
+                end_pos.append([size[0]//2, size[1]])
+            elif i%2==0:
                 if j==0:
                     start_pos.append([0, size[1]//2])
                     end_pos.append([size[0]//2, size[1]])
-                elif j==(rows-1):
+                elif j==(cols-1):
                     start_pos.append([size[0]//2, 0])
                     end_pos.append([size[0], size[1]//2])
                 else:
                     start_pos.append([size[0]//2, 0])
-                    end_pos.append([size[0]//2, size[1]])
-            if i%2==1:
-                if j==(rows-1):
+                    end_pos.append([size[0]//2+1, size[1]])
+            elif i%2==1:
+                if j==(cols-1):
                     start_pos.append([0, size[1]//2])
                     end_pos.append([size[0]//2, 0])
                 elif j==0:
@@ -123,19 +126,21 @@ def cell_paths(rows, cols, size):
                     end_pos.append([size[0], size[1]//2])
                 else:
                     start_pos.append([size[0]//2, size[1]])
-                    end_pos.append([size[0]//2, 0])
+                    end_pos.append([size[0]//2+1, 0])
         
             world_offset.append([j*size[1], i*size[0]])
 
     return start_pos, end_pos, world_offset
 
-def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells):
+def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells, pmap_list):
     start_pos, end_pos, world_offset = cell_paths(rows, cols, size)
     shadow_dims = np.shape(np.array(shadow_idx_stack))
+    pmap_dims = np.shape(np.array(pmap_list))
     seq_shadow_idx_stack = []
     seq_start = []
     seq_end = []
     seq_world_offset = []
+    seq_pmap = []
 
     for i in range(rows):
         if i%2==0:
@@ -143,16 +148,19 @@ def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells):
             seq_start.append(start_pos[i*cols:(i+1)*cols])
             seq_end.append(end_pos[i*cols:(i+1)*cols])
             seq_world_offset.append(world_offset[i*cols:(i+1)*cols])
+            seq_pmap.append(pmap_list[i*cols:(i+1)*cols])
         else:
             seq_shadow_idx_stack.append(shadow_idx_stack[i*cols:(i+1)*cols][::-1])
             seq_start.append(start_pos[i*cols:(i+1)*cols][::-1])
             seq_end.append(end_pos[i*cols:(i+1)*cols][::-1])
             seq_world_offset.append(world_offset[i*cols:(i+1)*cols][::-1])
+            seq_pmap.append(pmap_list[i*cols:(i+1)*cols][::-1])
 
     seq_start = np.reshape(np.array(seq_start), (num_cells, 2))
     seq_end = np.reshape(np.array(seq_end), (num_cells, 2))
     seq_world_offset = np.reshape(np.array(seq_world_offset), (num_cells, 2))
     seq_shadow_idx_stack = np.reshape(np.array(seq_shadow_idx_stack), shadow_dims)
+    seq_pmap = np.reshape(np.array(seq_pmap), pmap_dims)
     
     startstop_list = []
     for k in range(len(seq_start)):
@@ -160,7 +168,7 @@ def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells):
         stop = convert_pos(np.tile(seq_end[k], (num_agents, 1)), size)
         startstop_list.append([start, stop])
     
-    return seq_shadow_idx_stack, startstop_list, seq_world_offset
+    return seq_shadow_idx_stack, startstop_list, seq_world_offset, seq_pmap
 
 def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stack, num_cells=1):
     
@@ -186,11 +194,9 @@ def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stac
     plt.ylabel('km')
     #plt.title('Timescale x' + str(total_time/(time_horizon/fps)))
     
-    '''
     overlay = ax.imshow(pmap, origin='upper', alpha = .5, animated = True)
     cbar = plt.colorbar(overlay)
     cbar.ax.set_title('Information Density')
-    '''
 
     for i in range(num_agents):
         line = [[pos_x[i][0], pos_x[i][1]], [pos_y[i][0], pos_y[i][1]]]
@@ -200,7 +206,7 @@ def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stac
     max_frames = len(shadow_map_stack)
     def updatefig(frame, img, traj, ax):
         img.set_array(shadow_map_stack[frame%time_horizon])
-        #overlay.set_array(pmap)
+        overlay.set_array(pmap)
         for i in range(num_agents):
             line = [[pos_x[i][frame], pos_x[i][frame+1]], [pos_y[i][frame], pos_y[i][frame+1]]]
             traj, = ax.plot(line[0],line[1], c=cmap(i))
@@ -211,6 +217,27 @@ def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stac
     ani.save('shadow_avoidance.mp4', writer=FFwriter)
 
 
+def split(info_map, num_cells):
+    num_rows, num_cols = get_factors(num_cells)
+    row = info_map.shape[0]
+    col = info_map.shape[1]
+    
+    bounds = []
+    y_bound = int(row/num_rows)
+    x_bound = int(col/num_cols)
+    for i in range(num_rows):
+        y_min = int(i*y_bound)
+        y_max = int((i+1)*y_bound)
+        for j in range(num_cols):
+            bounds.append([[int(j*x_bound), int((j+1)*x_bound)], [y_min, y_max]])
+    bounds = np.array(bounds)
+        
+    split_maps = []
+    for bound in bounds:
+        cell = info_map[bound[1,0]:bound[1,1], bound[0,0]:bound[0,1]]
+        split_maps.append(cell)
+    
+    return split_maps
 
 #######################################################
 
@@ -221,7 +248,7 @@ time_args = {
     'end_time': 10000,
     'time_horizon': 100
 }
-num_cells = 16
+num_cells = 6
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
 shadow_map_stack = split_shadow_stack[0]
@@ -234,10 +261,18 @@ end_pos  = np.array([[70,40], [70, 40], [70, 40]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
 startstop = [init_pos, final_pos]
-pmap = random_info(size)
+
+original_size =  [np.shape(original_shadow_stack[0])[0], np.shape(original_shadow_stack[0])[1]]
+pmap = random_info(original_size)
+pmap_list = split(pmap, num_cells)
+
+size = [np.shape(split_shadow_stack[0][0])[0], np.shape(split_shadow_stack[0][1])[1]]
+main_sequential(3, time_args, num_cells, map_size = size, info_map=pmap_list, shadow_idx_stack=split_idx_stack)
+path_travelled = np.load('path_data.npy')
+animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow_stack, num_cells)
 
 # for testing:
-pmap = np.ones((size[0], size[1]))
+#pmap = np.ones((size[0], size[1]))
 #shadow_idx_stack = np.ones((100, 1, 2))*50
 
 '''
@@ -245,11 +280,6 @@ main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, in
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stack)
 '''
-
-size = [np.shape(split_shadow_stack[0][0])[0], np.shape(split_shadow_stack[0][1])[1]]
-main_sequential(3, time_args, num_cells, map_size = size, info_map=pmap, shadow_idx_stack=split_idx_stack)
-path_travelled = np.load('path_data.npy')
-animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow_stack, num_cells)
 
 #TODO: make scaling depend on map size
 #TODO: something weird is happening with cellspaths() when rows!=cols
