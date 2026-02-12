@@ -97,7 +97,7 @@ def get_factors(num):
         num_cols = int(np.median(factors))
     return num_rows, num_cols
 
-def cell_paths(rows, cols, size, custom_start = [120,0]):
+def cell_paths(rows, cols, size, custom_start = [120,0], custom_end=[100,0]):
     start_pos = []
     end_pos = []
     world_offset = []
@@ -112,15 +112,23 @@ def cell_paths(rows, cols, size, custom_start = [120,0]):
                     start_pos.append([0, size[1]//2])
                     end_pos.append([size[0]//2, size[1]])
                 elif j==(cols-1):
-                    start_pos.append([size[0]//2, 0])
-                    end_pos.append([size[0], size[1]//2])
+                    if i==(rows-1):
+                        start_pos.append([size[0]//2, 0])
+                        end_pos.append(custom_end)
+                    else:
+                        start_pos.append([size[0]//2, 0])
+                        end_pos.append([size[0], size[1]//2])
                 else:
                     start_pos.append([size[0]//2, 0])
                     end_pos.append([size[0]//2+1, size[1]])
             elif i%2==1:
                 if j==(cols-1):
-                    start_pos.append([0, size[1]//2])
-                    end_pos.append([size[0]//2, 0])
+                    if i==(rows-1):
+                        start_pos.append([0, size[1]//2])
+                        end_pos.append(custom_end)
+                    else:
+                        start_pos.append([0, size[1]//2])
+                        end_pos.append([size[0]//2, 0])
                 elif j==0:
                     start_pos.append([size[0]//2, size[1]])
                     end_pos.append([size[0], size[1]//2])
@@ -248,23 +256,10 @@ time_args = {
     'end_time': 10000,
     'time_horizon': 100
 }
-num_cells = 4
+num_cells = 12
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
 split_shadow_stack, split_idx_stack = map_time_series(split_shadow_stack, split_idx_stack, num_cells, time_args['time_horizon']*num_cells)
-
-'''
-shadow_map_stack = split_shadow_stack[0]
-shadow_idx_stack = split_idx_stack[0]
-
-shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
-size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
-start_pos = np.array([[30, 70], [40, 70], [50, 70]])
-end_pos  = np.array([[70,40], [70, 40], [70, 40]])
-init_pos = convert_pos(start_pos, size)
-final_pos = convert_pos(end_pos, size)
-startstop = [init_pos, final_pos]
-'''
 
 original_size =  [np.shape(original_shadow_stack[0])[0], np.shape(original_shadow_stack[0])[1]]
 pmap = random_info(original_size)
@@ -279,7 +274,19 @@ animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow
 #pmap = np.ones((size[0], size[1]))
 #shadow_idx_stack = np.ones((100, 1, 2))*50
 
+
 '''
+shadow_map_stack = split_shadow_stack[0]
+shadow_idx_stack = split_idx_stack[0]
+
+shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
+size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
+start_pos = np.array([[30, 70], [40, 70], [50, 70]])
+end_pos  = np.array([[70,40], [70, 40], [70, 40]])
+init_pos = convert_pos(start_pos, size)
+final_pos = convert_pos(end_pos, size)
+startstop = [init_pos, final_pos]
+
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stack)
@@ -287,3 +294,7 @@ animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stac
 
 #TODO: make scaling depend on map size
 #TODO: all agents still aren't showing in plotting. ask chatgpt
+#TODO: in second row, behavior is erratic and agent is passing through shadows. this isn't really happening in the first row. see what the objective function is outputting here and check if the shadow idxs are actua;ly right
+
+
+#TODO: test in detail if the shadow idxs are actually in the right place. If they are, then test map sequencing.

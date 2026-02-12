@@ -177,22 +177,15 @@ def get_split_maps_idxs(path, time_args, num_maps):
     
     shadows_idx_stack = []
     max_len = max(arr.shape[0] for arr in shadows_idx_stack_list)
-    for j in range(num_maps):
-        for i in range(len(split_stack)):
-            idx = (j*len(split_stack))+i
+    for i in range(len(split_stack)):
+        for j in range(num_maps):
+            idx = i * num_maps + j
+            #idx = (j*len(split_stack))+i
             map_size =  np.shape(split_stack[i][j])
             if len(shadows_idx_stack_list[idx])<max_len:
                 shadows_idx_stack_list[idx] =  padding(shadows_idx_stack_list[idx], max_len, 2*map_size)
     shadows_idx_stack = np.reshape(np.array(shadows_idx_stack_list), (len(split_stack), num_maps, max_len, 2))
-    
-    '''
-    shadows_idx_stack = []
-    for i in range(len(split_stack)):
-        N = num_maps
-        shadows_idx_stack.append(shadows_idx_stack_list[i*N:(i+1)*N])
-    shadows_idx_stack = np.array(shadows_idx_stack, dtype=object)
-    '''
-    
+
     split_stack_list = []
     idx_stack_list = []
     for i in range(num_maps):
