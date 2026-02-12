@@ -172,7 +172,7 @@ def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells, p
 
 def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stack, num_cells=1):
     
-    fps = 10
+    fps = 20
     size = pmap.shape[0]
     cmap = get_colormap(num_agents+1)
     pos_x = []
@@ -248,7 +248,7 @@ time_args = {
     'end_time': 10000,
     'time_horizon': 100
 }
-num_cells = 6
+num_cells = 4
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
 shadow_map_stack = split_shadow_stack[0]
@@ -282,5 +282,4 @@ animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stac
 '''
 
 #TODO: make scaling depend on map size
-#TODO: something weird is happening with cellspaths() when rows!=cols
 #TODO: all agents still aren't showing in plotting. ask chatgpt
