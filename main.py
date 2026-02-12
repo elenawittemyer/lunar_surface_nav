@@ -7,7 +7,7 @@ from multi_rover_ergodic.gaussian import gaussian
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs
+from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs, map_time_series
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from info_distrib import random_info
 
@@ -205,7 +205,7 @@ def animate_plot(path_travelled, num_agents, time_horizon, pmap, shadow_map_stac
     
     max_frames = len(shadow_map_stack)
     def updatefig(frame, img, traj, ax):
-        img.set_array(shadow_map_stack[frame%time_horizon])
+        img.set_array(shadow_map_stack[frame])
         overlay.set_array(pmap)
         for i in range(num_agents):
             line = [[pos_x[i][frame], pos_x[i][frame+1]], [pos_y[i][frame], pos_y[i][frame+1]]]
@@ -251,6 +251,9 @@ time_args = {
 num_cells = 4
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
+split_shadow_stack, split_idx_stack = map_time_series(split_shadow_stack, split_idx_stack, num_cells, time_args['time_horizon']*num_cells)
+
+'''
 shadow_map_stack = split_shadow_stack[0]
 shadow_idx_stack = split_idx_stack[0]
 
@@ -261,6 +264,7 @@ end_pos  = np.array([[70,40], [70, 40], [70, 40]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
 startstop = [init_pos, final_pos]
+'''
 
 original_size =  [np.shape(original_shadow_stack[0])[0], np.shape(original_shadow_stack[0])[1]]
 pmap = random_info(original_size)

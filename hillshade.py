@@ -127,6 +127,15 @@ def map_splitter(shadow_map_stack, num_cells=4, bounds=None):
     
     return split_shadow_stack
 
+def map_time_series(maps, idxs, num_cells, time_horizon):
+    time_step = int(time_horizon/num_cells)
+    seq_maps = []
+    seq_idxs = []
+    for i in range(len(maps)):
+        seq_maps.append(maps[i][i*time_step:(i+1)*time_step])
+        seq_idxs.append(idxs[i][i*time_step:(i+1)*time_step])
+    return seq_maps, seq_idxs
+
 def convert_idx(idx_array, size):
     row_conv = np.round(idx_array[:,0]-size[0]/2)
     col_conv = np.round(idx_array[:,1]-size[1]/2)
@@ -137,9 +146,10 @@ def get_split_maps_idxs(path, time_args, num_maps):
     time_horizon = time_args['time_horizon']
     start_time = time_args['start_time']
     end_time = time_args['end_time']
+    total_end_time = end_time + (end_time-start_time)*(num_maps-1)
     dt = time_args['dt']
 
-    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, end_time, dt)
+    shadow_map_stack = get_shadow_map_stack(path, 'Site01', start_time, total_end_time, dt)
     split_stack = map_splitter(shadow_map_stack, num_maps)
     
     if ((end_time-start_time)//dt)!=time_horizon:
@@ -169,7 +179,7 @@ def get_split_maps_idxs(path, time_args, num_maps):
     max_len = max(arr.shape[0] for arr in shadows_idx_stack_list)
     for j in range(num_maps):
         for i in range(len(split_stack)):
-            idx = (j*100)+i
+            idx = (j*len(split_stack))+i
             map_size =  np.shape(split_stack[i][j])
             if len(shadows_idx_stack_list[idx])<max_len:
                 shadows_idx_stack_list[idx] =  padding(shadows_idx_stack_list[idx], max_len, 2*map_size)
