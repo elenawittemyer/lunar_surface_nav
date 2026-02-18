@@ -257,11 +257,12 @@ time_args = {
     'end_time': 10000,
     'time_horizon': 100
 }
-num_cells = 4
+num_cells = 6
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
 split_shadow_stack, split_idx_stack = map_time_series(split_shadow_stack, split_idx_stack, num_cells, time_args['time_horizon']*num_cells)
 
+'''
 original_size =  [np.shape(original_shadow_stack[0])[0], np.shape(original_shadow_stack[0])[1]]
 pmap = random_info(original_size)
 pmap_list = split(pmap, num_cells)
@@ -273,8 +274,8 @@ animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow
 
 
 '''
-shadow_map_stack = split_shadow_stack[0]
-shadow_idx_stack = split_idx_stack[0]
+shadow_map_stack = split_shadow_stack[2]
+shadow_idx_stack = split_idx_stack[2]
 
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
@@ -288,7 +289,7 @@ pmap = random_info(size)
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stack)
-'''
+
 
 #TODO: make scaling depend on map size
 #TODO: all agents still aren't showing in plotting. ask chatgpt
