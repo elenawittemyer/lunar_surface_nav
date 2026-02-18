@@ -110,7 +110,8 @@ class ErgodicTrajectoryOpt(object):
             #lower_step_constr = 1 - step_constr
             
             sc_weight = 10
-            _g = np.concatenate((sc_weight*shadow_constraint.flatten(), control_constraint.flatten(), upper_step_constr.flatten()))
+            c_weight = 100
+            _g = np.concatenate((sc_weight*shadow_constraint.flatten(), c_weight*control_constraint.flatten(), upper_step_constr.flatten()))
             
             return _g
         

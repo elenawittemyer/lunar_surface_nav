@@ -7,7 +7,7 @@ from multi_rover_ergodic.gaussian import gaussian
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs, map_time_series
+from hillshade import get_shadow_map, get_shadow_map_stack, get_split_maps_idxs, time_series
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from info_distrib import random_info
 
@@ -47,6 +47,7 @@ def main_sequential(num_agents, time_args, num_cells, map_size, info_map=None, s
     path_travelled = np.empty(shape=(num_agents, 2) + (0, )).tolist()
     rows, cols = get_factors(num_cells)
     seq_shadows, startstop_list, world_offset, seq_pmap = sort_sequential(shadow_idx_stack, rows, cols, map_size, num_agents, num_cells, info_map)
+    seq_shadows = np.array(time_series(seq_shadows, num_cells, time_args['time_horizon']))
 
     for i in range(num_cells):
         traj_opt = ErgodicTrajectoryOpt(startstop_list[i], seq_pmap[i], num_agents, map_size, seq_shadows[i], time_args)
@@ -171,9 +172,10 @@ def sort_sequential(shadow_idx_stack, rows, cols, size, num_agents, num_cells, p
     seq_pmap = np.reshape(np.array(seq_pmap), pmap_dims)
     
     startstop_list = []
+    offset = np.tile(np.array([[-1, 0, 1]]).T, 2)
     for k in range(len(seq_start)):
-        start = convert_pos(np.tile(seq_start[k], (num_agents, 1)), size)
-        stop = convert_pos(np.tile(seq_end[k], (num_agents, 1)), size)
+        start = convert_pos(np.tile(seq_start[k], (num_agents, 1)), size)+offset
+        stop = convert_pos(np.tile(seq_end[k], (num_agents, 1)), size)+offset
         startstop_list.append([start, stop])
     
     return seq_shadow_idx_stack, startstop_list, seq_world_offset, seq_pmap
@@ -260,9 +262,7 @@ time_args = {
 num_cells = 6
 
 split_shadow_stack, split_idx_stack, original_shadow_stack = get_split_maps_idxs(dem_path, time_args, num_cells) #split shadows sorted by row then column
-split_shadow_stack, split_idx_stack = map_time_series(split_shadow_stack, split_idx_stack, num_cells, time_args['time_horizon']*num_cells)
 
-'''
 original_size =  [np.shape(original_shadow_stack[0])[0], np.shape(original_shadow_stack[0])[1]]
 pmap = random_info(original_size)
 pmap_list = split(pmap, num_cells)
@@ -274,12 +274,12 @@ animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, original_shadow
 
 
 '''
-shadow_map_stack = split_shadow_stack[2]
-shadow_idx_stack = split_idx_stack[2]
+shadow_map_stack = split_shadow_stack[3]
+shadow_idx_stack = split_idx_stack[3]
 
 shadow_map = shadow_map_stack[0] #TODO: update info map to change over time
 size = [np.shape(shadow_map)[0], np.shape(shadow_map)[1]]
-start_pos = np.array([[80, 60], [70, 90], [80, 30]])
+start_pos = np.array([[82, 25], [84, 20], [80, 30]])
 end_pos  = np.array([[70,40], [70, 40], [70, 40]])
 init_pos = convert_pos(start_pos, size)
 final_pos = convert_pos(end_pos, size)
@@ -289,7 +289,7 @@ pmap = random_info(size)
 main(num_agents = 3, map_size = size, time_args = time_args, pos = startstop, info_map = pmap, shadows = shadow_idx_stack)
 path_travelled = np.load('path_data.npy')
 animate_plot(path_travelled, 3, time_args['time_horizon'], pmap, shadow_map_stack)
-
+'''
 
 #TODO: make scaling depend on map size
 #TODO: all agents still aren't showing in plotting. ask chatgpt

@@ -127,14 +127,11 @@ def map_splitter(shadow_map_stack, num_cells=4, bounds=None):
     
     return split_shadow_stack
 
-def map_time_series(maps, idxs, num_cells, time_horizon):
-    time_step = int(time_horizon/num_cells)
-    seq_maps = []
+def time_series(idxs, num_cells, time_step):
     seq_idxs = []
-    for i in range(len(maps)):
-        seq_maps.append(maps[i][i*time_step:(i+1)*time_step])
+    for i in range(num_cells):
         seq_idxs.append(idxs[i][i*time_step:(i+1)*time_step])
-    return seq_maps, seq_idxs
+    return seq_idxs
 
 def convert_idx(idx_array, size):
     row_conv = np.round(idx_array[:,0]-size[0]/2)
